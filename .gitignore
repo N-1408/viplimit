@@ -1,0 +1,44 @@
+# ============================================
+# 📁 File: .gitignore
+# 👤 Author: User with AI
+# 📝 Description: Git ignore file for VipLimit project.
+#    Prevents sensitive data like .env files, logs,
+#    and node_modules from being pushed to GitHub.
+# 📅 Created: 2026-03-12 05:51 (Tashkent Time)
+# ============================================
+
+# 🔒 Environment variables (NEVER push!)
+.env
+.env.local
+.env.*
+!.env.example
+
+# 📦 Dependencies
+node_modules/
+package-lock.json
+
+# 🏗️ Build outputs
+dist/
+build/
+.vite/
+
+# 📋 Logs
+logs/
+*.log
+npm-debug.log*
+
+# 💻 IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 🖥️ OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 🗄️ Database
+*.sql.bak
+*.dump
