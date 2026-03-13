@@ -477,7 +477,7 @@ function RoomsPage() {
             )}
 
             {/* ➕✏️ Room Modal (Create/Edit) */}
-            {showRoomModal && (
+            {showRoomModal && createPortal(
                 <div className="modal-overlay" onClick={() => setShowRoomModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
@@ -527,11 +527,12 @@ function RoomsPage() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* ▶️ Start Session Modal */}
-            {showStartModal && selectedRoom && (
+            {showStartModal && selectedRoom && createPortal(
                 <div className="modal-overlay" onClick={() => setShowStartModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
@@ -599,11 +600,12 @@ function RoomsPage() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* ⏹️ Stop Session Modal */}
-            {showStopModal && selectedRoom && (
+            {showStopModal && selectedRoom && createPortal(
                 <div className="modal-overlay" onClick={() => setShowStopModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
@@ -648,11 +650,12 @@ function RoomsPage() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* 🧾 Bill Receipt Modal */}
-            {showBillModal && billData && (
+            {showBillModal && billData && createPortal(
                 <div className="modal-overlay" onClick={() => setShowBillModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
                         <div className="modal-header">
@@ -736,11 +739,12 @@ function RoomsPage() {
                             <button className="btn btn-primary" onClick={() => setShowBillModal(false)}>Yopish</button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* 🛒 Add Product Modal */}
-            {showProductModal && selectedRoom && (
+            {showProductModal && selectedRoom && createPortal(
                 <div className="modal-overlay" onClick={() => setShowProductModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
@@ -846,10 +850,11 @@ function RoomsPage() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
             {/* 🗑️ Delete Confirmation Modal */}
-            {showDeleteConfirm && (
+            {showDeleteConfirm && createPortal(
                 <div className="modal-overlay" onClick={() => setShowDeleteConfirm(null)}>
                     <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
                         <div className="text-center" style={{ padding: '20px 0' }}>
@@ -871,7 +876,8 @@ function RoomsPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

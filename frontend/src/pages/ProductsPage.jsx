@@ -15,6 +15,7 @@
 // ============================================
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
@@ -141,7 +142,7 @@ function ProductsPage() {
             {products.length === 0 && <div className="text-center mt-24"><p className="text-muted">Hali mahsulot qo'shilmagan</p></div>}
 
             {/* ➕✏️ Product Modal */}
-            {showModal && (
+            {showModal && createPortal(
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
@@ -181,11 +182,12 @@ function ProductsPage() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* 📦 Restock Modal */}
-            {showRestockModal && (
+            {showRestockModal && createPortal(
                 <div className="modal-overlay" onClick={() => setShowRestockModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
@@ -202,7 +204,8 @@ function ProductsPage() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
