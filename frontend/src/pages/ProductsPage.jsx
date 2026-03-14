@@ -12,6 +12,8 @@
 // 2026-03-13 05:22 (Tashkent) — UI Polish:
 //    - Native <select> replaced with CustomSelect component
 //    - 'Bekor' buttons renamed to 'Bekor qilish'
+// 2026-03-14 21:26 (Tashkent) — Added premium DeleteConfirmModal (V5.0)
+// 2026-03-14 21:42 (Tashkent) — Matched Delete Modal style to RoomsPage (V5.1)
 // ============================================
 
 import { useState, useEffect } from 'react';
@@ -31,6 +33,7 @@ function ProductsPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showRestockModal, setShowRestockModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // product object to delete
     const [editProduct, setEditProduct] = useState(null);
     const [restockProduct, setRestockProductState] = useState(null);
     const [restockQty, setRestockQty] = useState(1);
@@ -70,10 +73,15 @@ function ProductsPage() {
         } catch (err) { alert(err.response?.data?.error || 'Xatolik'); }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm("Bu mahsulotni o'chirishni xohlaysizmi?")) return;
-        try { await api.delete(`/products/${id}`); fetchProducts(); }
-        catch (err) { alert(err.response?.data?.error || 'Xatolik'); }
+    const confirmDelete = async () => {
+        if (!showDeleteConfirm) return;
+        try {
+            await api.delete(`/products/${showDeleteConfirm.id}`);
+            setShowDeleteConfirm(null);
+            fetchProducts();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Xatolik');
+        }
     };
 
     const openEdit = (product) => {
@@ -126,10 +134,10 @@ function ProductsPage() {
                                     <td>
                                         <div className="flex gap-8">
                                             {hasRole('manager', 'owner') && (<>
-                                                <button className="btn btn-ghost btn-icon" onClick={() => openEdit(p)}><Pencil size={14} /></button>
-                                                <button className="btn btn-ghost btn-icon" onClick={() => { setRestockProductState(p); setRestockQty(1); setShowRestockModal(true); }}><PackagePlus size={14} /></button>
+                                                <button className="btn btn-ghost btn-icon" title="Tahrirlash" onClick={() => openEdit(p)}><Pencil size={14} /></button>
+                                                <button className="btn btn-ghost btn-icon" title="Skladdan qo'shish" onClick={() => { setRestockProductState(p); setRestockQty(1); setShowRestockModal(true); }}><PackagePlus size={14} /></button>
                                             </>)}
-                                            {hasRole('owner') && <button className="btn btn-ghost btn-icon" onClick={() => handleDelete(p.id)}><Trash2 size={14} /></button>}
+                                            {hasRole('owner') && <button className="btn btn-ghost btn-icon" title="O'chirish" onClick={() => setShowDeleteConfirm(p)}><Trash2 size={14} /></button>}
                                         </div>
                                     </td>
                                 </tr>
@@ -203,6 +211,33 @@ function ProductsPage() {
                                 <button type="submit" className="btn btn-success"><PackagePlus size={16} /> Kiritish</button>
                             </div>
                         </form>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* 🗑️ Delete Confirmation Modal */}
+            {showDeleteConfirm && createPortal(
+                <div className="modal-overlay" onClick={() => setShowDeleteConfirm(null)}>
+                    <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+                        <div className="text-center" style={{ padding: '20px 0' }}>
+                            <div style={{ color: 'var(--accent-danger)', marginBottom: '16px' }}>
+                                <Trash2 size={48} strokeWidth={1.5} />
+                            </div>
+                            <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>Mahsulotni o'chirish</h3>
+                            <p className="text-muted" style={{ lineHeight: '1.6' }}>
+                                Rostdan ham <b>{showDeleteConfirm.name}</b> mahsulotini o'chirib tashlamoqchimisiz?
+                                <br />Bu amalni ortga qaytarib bo'lmaydi.
+                            </p>
+                        </div>
+                        <div className="flex gap-12 mt-24">
+                            <button className="btn btn-secondary w-full" onClick={() => setShowDeleteConfirm(null)}>
+                                Bekor qilish
+                            </button>
+                            <button className="btn btn-danger w-full" onClick={confirmDelete}>
+                                Ha, o'chirish
+                            </button>
+                        </div>
                     </div>
                 </div>,
                 document.body

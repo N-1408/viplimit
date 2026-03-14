@@ -1268,6 +1268,101 @@ tr.out-of-stock {
     font-weight: 800;
 }
 
+/* 📱 Section & Header Utilities — V5.5 Mastery Spacing */
+body {
+    scrollbar-gutter: stable;
+    /* Still useful for non-JS shifts */
+}
+
+.section-header {
+    margin-bottom: 48px;
+    /* Massive breathing room */
+    margin-top: 16px;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    /* Prevent sticking to table/card below */
+    letter-spacing: -0.01em;
+}
+
+/* 🍎 Apple-style Soft Depth */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    /* Slightly tighter padding for premium feel */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.stat-card-value {
+    font-size: 1.2rem;
+    /* Significantly smaller top stats */
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+}
+
+/* 📊 Table Adjustments for Mastery Spacing */
+.table-container th,
+.table-container td {
+    padding: 18px 32px;
+    /* extreme horizontal space to avoid edge sticking */
+}
+
+.table-container thead th {
+    padding-bottom: 24px;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+}
+
+/* Vertical Rhythm Utilities */
+.mb-64 {
+    margin-bottom: 64px !important;
+}
+
+.mt-64 {
+    margin-top: 64px !important;
+}
+
+/* 🎨 Selection & Scrollbars */
+::selection {
+    background: var(--accent-primary);
+    color: var(--bg-main);
+}
+
+/* Custom Scrollbar — Telegram Style */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 .bill-receipt-header p {
     font-size: 0.78rem;
     opacity: 0.85;

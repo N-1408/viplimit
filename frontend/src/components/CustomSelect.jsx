@@ -43,12 +43,28 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // ⌨️ Close on Escape key
+    // ⌨️ Close on Escape key + Body Scroll Lock (with shift compensation)
     useEffect(() => {
         const handleKey = (e) => { if (e.key === 'Escape') setOpen(false); };
         document.addEventListener('keydown', handleKey);
-        return () => document.removeEventListener('keydown', handleKey);
-    }, []);
+
+        if (open) {
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+            document.body.style.overflow = 'hidden';
+            if (scrollbarWidth > 0) {
+                document.body.style.paddingRight = `${scrollbarWidth}px`;
+            }
+        } else {
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleKey);
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        };
+    }, [open]);
 
     // 📐 Compute dropdown position from trigger rect — called on open
     const handleToggle = () => {
