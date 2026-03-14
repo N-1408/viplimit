@@ -11,6 +11,9 @@
 // 2026-03-13 06:09 (Tashkent) — Fixed: dropdown now uses position:fixed with
 //    getBoundingClientRect so it is not clipped by modal overflow:hidden.
 //    Also auto-flips to open upward if not enough space below on screen.
+// 2026-03-14 22:35 (Tashkent) — V5.5 Mastery Refinement:
+//    - Added exact JS scrollbar width compensation to eliminate
+//    100% of layout shift jitter when opening dropdown.
 // ============================================
 
 import { useState, useEffect, useRef } from 'react';

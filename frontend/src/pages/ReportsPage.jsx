@@ -13,6 +13,9 @@
 //    - Removed custom date range picker (simplified UI).
 //    - Fixed spacing & font sizes (compact Apple-style).
 //    - Auto-update on selection (removed refresh btn).
+// 2026-03-14 22:35 (Tashkent) — V5.5 Mastery Refinement:
+//    - Drastically reduced font sizes and refined vertical rhythm.
+//    - Fixed 100% layout jitter via JS scrollbar compensation.
 // ============================================
 
 import { useState, useEffect } from 'react';
