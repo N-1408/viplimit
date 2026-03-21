@@ -6,6 +6,10 @@
 //    manager and owner roles.
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
+// 📋 CHANGE LOG:
+// 2026-03-21 12:08 (Tashkent) — V6.0 Apple/Telegram UI Redesign:
+//    - Inherited global CSS variables for tighter section paddings.
+// ============================================
 
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';

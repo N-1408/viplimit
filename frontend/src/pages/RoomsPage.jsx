@@ -7,6 +7,8 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
+// 2026-03-21 12:08 (Tashkent) — V6.0 Apple/Telegram UI Redesign:
+//    - Inherited global CSS variables for tighter room cards and paddings.
 // 2026-03-13 01:53 (Tashkent) — Major rewrite:
 //   - VIP = cheksiz vaqt (same price, not separate rate)
 //   - Room edit/delete functionality added
@@ -35,8 +37,10 @@
 //   - Native <select> replaced with custom styled dropdown component
 //   - productDropdownOpen state added for custom dropdown toggle
 // 2026-03-13 05:22 (Tashkent) — UI Polish:
-//   - All native <select> elements replaced with CustomSelect component
-//   - All 'Bekor' buttons renamed to 'Bekor qilish'
+// 2026-03-21 12:15 (Tashkent) — V6.1 Bug Fixes:
+//   - Added `autoFocus` to main modal inputs for quick `Enter` submits
+//   - Replaced native number input with custom +/- buttons
+//   - Cleaned up console_type options (kept only PS3, PS4, PS5)
 // ============================================
 
 import { useState, useEffect, useRef } from 'react';
@@ -49,8 +53,45 @@ import {
     Plus, Play, Square, ShoppingCart, Clock, Infinity, Monitor,
     Users, MoreVertical, Pencil, Trash2, X, Receipt,
     Banknote, CreditCard, Timer, Hourglass, CheckCircle2,
-    Gamepad2, PowerOff, Shield
+    Gamepad2, PowerOff, Shield, CalendarPlus, CalendarClock, CalendarX2
 } from 'lucide-react';
+
+// Helpers for Date logic
+const getTodayDate = () => {
+    // using local time string to prevent timezone offset bugs
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+};
+
+const getTomorrowDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+};
+
+const getDayAfterTomorrowDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 2);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+};
+
+const formatReservationDate = (isoString) => {
+    const dStr = isoString.split('T')[0];
+    if (dStr === getTodayDate()) return 'Bugun';
+    if (dStr === getTomorrowDate()) return 'Ertaga';
+    if (dStr === getDayAfterTomorrowDate()) return 'Indinga';
+    return new Date(isoString).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' }).replace(/\//g, '.');
+};
+
+const baseTimeOptions = [];
+for (let h = 0; h < 24; h++) {
+    const hour = h.toString().padStart(2, '0');
+    baseTimeOptions.push({ value: `${hour}:00`, label: `${hour}:00` });
+    baseTimeOptions.push({ value: `${hour}:30`, label: `${hour}:30` });
+}
 
 function RoomsPage() {
     const { hasRole } = useAuth();
@@ -65,9 +106,10 @@ function RoomsPage() {
     const [showStopModal, setShowStopModal] = useState(false);
     const [showProductModal, setShowProductModal] = useState(false);
     const [showBillModal, setShowBillModal] = useState(false);
+    const [showBookingModal, setShowBookingModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // room to delete
     const [selectedRoom, setSelectedRoom] = useState(null);
-    const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [contextMenu, setContextMenu] = useState({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
 
     // 📱 Long press timer ref for mobile
@@ -77,7 +119,6 @@ function RoomsPage() {
     useEffect(() => {
         const handleClick = () => {
             setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
-            setProductDropdownOpen(false);
         };
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
@@ -86,6 +127,7 @@ function RoomsPage() {
                 setShowStopModal(false);
                 setShowProductModal(false);
                 setShowBillModal(false);
+                setShowBookingModal(false);
                 setShowDeleteConfirm(null); // Close delete confirm modal
                 setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
             }
@@ -114,6 +156,39 @@ function RoomsPage() {
         payment_method: 'cash', discount_amount: 0, discount_reason: ''
     });
     const [productForm, setProductForm] = useState({ product_id: '', quantity: 1 });
+    const [bookingForm, setBookingForm] = useState({
+        customer_phone: '',
+        date: getTodayDate(),
+        from_time: '18:00',
+        until_time: ''
+    });
+    const [phoneTouched, setPhoneTouched] = useState(false);
+
+    const getAvailableTimeOptions = (dateStr) => {
+        if (dateStr !== getTodayDate()) {
+            return baseTimeOptions;
+        }
+        const now = new Date();
+        const currHour = now.getHours();
+        const currMin = now.getMinutes();
+
+        return baseTimeOptions.filter(opt => {
+            const [h, m] = opt.value.split(':').map(Number);
+            if (h > currHour) return true;
+            if (h === currHour && m > currMin) return true;
+            return false;
+        });
+    };
+
+    const availableTimeOptions = getAvailableTimeOptions(bookingForm.date);
+
+    useEffect(() => {
+        if (showBookingModal && availableTimeOptions.length > 0) {
+            if (!availableTimeOptions.find(o => o.value === bookingForm.from_time)) {
+                setBookingForm(prev => ({ ...prev, from_time: availableTimeOptions[0].value }));
+            }
+        }
+    }, [bookingForm.date, showBookingModal, availableTimeOptions]);
 
     // ⏱️ Live timer tick (every second)
     useEffect(() => {
@@ -236,12 +311,62 @@ function RoomsPage() {
         try {
             await api.post(`/sessions/${selectedRoom.active_session?.id}/products`, productForm);
             setShowProductModal(false);
-            setProductDropdownOpen(false);
             // 🔄 Refresh BOTH rooms (session product totals) AND products (stock counts)
             fetchRooms();
             fetchProducts();
         } catch (err) {
             alert(err.response?.data?.error || 'Xatolik');
+        }
+    };
+
+    // 🗓️ Book Room
+    const handleBookRoom = async (e) => {
+        e.preventDefault();
+        try {
+            if (bookingForm.customer_phone.length !== 9 || !bookingForm.from_time) {
+                return;
+            }
+
+            // Fix Timezone Bug string formatting: Send exact Local Time layout "YYYY-MM-DD HH:mm:00"
+            const reserved_from = `${bookingForm.date} ${bookingForm.from_time}:00`;
+
+            // If empty, auto-extend to 12 hours
+            let reserved_until;
+            if (bookingForm.until_time) {
+                reserved_until = `${bookingForm.date} ${bookingForm.until_time}:00`;
+            } else {
+                const dt = new Date(`${bookingForm.date}T${bookingForm.from_time}:00`);
+                dt.setHours(dt.getHours() + 12);
+                const mm = dt.getMonth() + 1;
+                const dd = dt.getDate();
+                const yy = dt.getFullYear();
+                const hh = dt.getHours().toString().padStart(2, '0');
+                const min = dt.getMinutes().toString().padStart(2, '0');
+                reserved_until = `${yy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')} ${hh}:${min}:00`;
+            }
+
+            const phoneStr = '+998 ' + bookingForm.customer_phone;
+            await api.post('/reservations', {
+                room_id: selectedRoom.id,
+                customer_name: phoneStr,
+                customer_phone: phoneStr,
+                reserved_from,
+                reserved_until,
+                notes: !bookingForm.until_time ? 'VIP' : undefined
+            });
+            setShowBookingModal(false);
+            fetchRooms();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Xatolik');
+        }
+    };
+
+    const handleCancelReservation = async (reservationId) => {
+        try {
+            await api.put(`/reservations/${reservationId}/cancel`);
+            fetchRooms();
+        } catch (err) {
+            alert(err.response?.data?.error || "Xatolik yuz berdi");
         }
     };
 
@@ -356,9 +481,15 @@ function RoomsPage() {
                                             </div>
                                         )}
                                         {room.status === 'free' && (
-                                            <div className="badge free">
-                                                <span className="badge-dot"></span> BO'SH
-                                            </div>
+                                            room.reservation_id ? (
+                                                <div className="badge" style={{ background: 'rgba(255,165,0,0.15)', color: '#ffa500', border: '1px solid rgba(255,165,0,0.3)' }}>
+                                                    <span className="badge-dot" style={{ background: '#ffa500' }}></span> BRON
+                                                </div>
+                                            ) : (
+                                                <div className="badge free">
+                                                    <span className="badge-dot"></span> BO'SH
+                                                </div>
+                                            )
                                         )}
                                     </div>
                                 </div>
@@ -393,13 +524,48 @@ function RoomsPage() {
                             {/* 🎮 Action buttons */}
                             <div className="room-card-actions">
                                 {!isBusy && room.status === 'free' && (
-                                    <button className="btn btn-success" style={{ width: '100%' }} onClick={() => {
-                                        setSelectedRoom(room);
-                                        setSessionForm({ is_vip: false, hours: 1, minutes: 0 });
-                                        setShowStartModal(true);
-                                    }}>
-                                        <Gamepad2 size={16} /> Ochish
-                                    </button>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                                        <button className="btn btn-success w-full" onClick={() => {
+                                            setSelectedRoom(room);
+                                            setSessionForm({ is_vip: false, hours: 1, minutes: 0 });
+                                            setShowStartModal(true);
+                                        }}>
+                                            <Gamepad2 size={16} /> Ochish
+                                        </button>
+
+                                        {room.reservation_id ? (
+                                            <div style={{
+                                                width: '100%',
+                                                minHeight: '44px',
+                                                background: 'rgba(255,165,0,0.08)',
+                                                border: '1px solid rgba(255,165,0,0.2)',
+                                                borderRadius: 'var(--radius-md)',
+                                                color: '#ffa500',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '4px 8px',
+                                                gap: '2px'
+                                            }}>
+                                                <div style={{ fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.3px', display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.2 }}>
+                                                    <CalendarClock size={14} /> {formatReservationDate(room.reservation_from)}, {new Date(room.reservation_from).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })} - {room.reservation_notes === 'VIP' ? 'VIP' : new Date(room.reservation_until).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                                {room.reservation_phone ? (
+                                                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff', marginTop: '2px', letterSpacing: '0.5px' }}>{room.reservation_phone}</div>
+                                                ) : null}
+                                            </div>
+                                        ) : (
+                                            <button className="btn w-full" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-glass)', color: 'var(--text-secondary)' }} onClick={() => {
+                                                setSelectedRoom(room);
+                                                setBookingForm({ customer_phone: '', date: getTodayDate(), from_time: '18:00', until_time: '' });
+                                                setPhoneTouched(false);
+                                                setShowBookingModal(true);
+                                            }}>
+                                                <CalendarPlus size={16} /> Band qilish
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                                 {isBusy && (
                                     <>
@@ -461,13 +627,36 @@ function RoomsPage() {
                                         onClick={() => { openEditRoom(contextMenu.room); setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 }); }}>
                                         <Pencil size={14} /> Tahrirlash
                                     </button>
-                                    <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--accent-danger)' }}
+                                    <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--accent-danger)', marginBottom: '4px' }}
                                         onClick={() => {
                                             setShowDeleteConfirm(contextMenu.room);
                                             setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
                                         }}>
                                         <Trash2 size={14} /> O'chirish
                                     </button>
+
+                                    <div style={{ height: '1px', background: 'var(--border-glass)', margin: '4px 0' }} />
+
+                                    {contextMenu.room.reservation_id ? (
+                                        <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: '#ffa500' }}
+                                            onClick={() => {
+                                                handleCancelReservation(contextMenu.room.reservation_id);
+                                                setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
+                                            }}>
+                                            <CalendarX2 size={14} /> Bronni bekor qilish
+                                        </button>
+                                    ) : (
+                                        <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-primary)' }}
+                                            onClick={() => {
+                                                setSelectedRoom(contextMenu.room);
+                                                setBookingForm({ customer_phone: '', date: getTodayDate(), from_time: '18:00', until_time: '' });
+                                                setPhoneTouched(false);
+                                                setShowBookingModal(true);
+                                                setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
+                                            }}>
+                                            <CalendarPlus size={14} /> Band qilish
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -489,7 +678,7 @@ function RoomsPage() {
                         <form onSubmit={handleRoomSubmit}>
                             <div className="form-group">
                                 <label className="form-label">Xona nomi</label>
-                                <input type="text" className="form-input" placeholder="Room 1" required
+                                <input type="text" className="form-input" placeholder="Room 1" required autoFocus
                                     value={roomForm.name} onChange={e => setRoomForm({ ...roomForm, name: e.target.value })} />
                             </div>
                             <div className="grid-2">
@@ -501,10 +690,7 @@ function RoomsPage() {
                                         options={[
                                             { value: 'PS3', label: 'PS3' },
                                             { value: 'PS4', label: 'PS4' },
-                                            { value: 'PS4 Pro', label: 'PS4 Pro' },
                                             { value: 'PS5', label: 'PS5' },
-                                            { value: 'PS5 Pro', label: 'PS5 Pro' },
-                                            { value: 'Xbox', label: 'Xbox' },
                                         ]}
                                     />
                                 </div>
@@ -561,7 +747,7 @@ function RoomsPage() {
                                     <div className="grid-2 animate-fade-in" style={{ animationDuration: '0.2s' }}>
                                         <div className="form-group">
                                             <label className="form-label">Soat</label>
-                                            <input type="number" className="form-input" min="0" max="24"
+                                            <input type="number" className="form-input" min="0" max="24" autoFocus
                                                 value={sessionForm.hours} onChange={e => setSessionForm({ ...sessionForm, hours: parseInt(e.target.value) || 0 })} />
                                         </div>
                                         <div className="form-group">
@@ -630,7 +816,7 @@ function RoomsPage() {
                             <div className="grid-2">
                                 <div className="form-group">
                                     <label className="form-label">Chegirma (so'm)</label>
-                                    <input type="number" className="form-input" min="0" placeholder="0"
+                                    <input type="number" className="form-input" min="0" placeholder="0" autoFocus
                                         value={stopForm.discount_amount === 0 ? '' : stopForm.discount_amount}
                                         onChange={e => setStopForm({ ...stopForm, discount_amount: e.target.value === '' ? 0 : parseInt(e.target.value) })} />
                                 </div>
@@ -756,83 +942,50 @@ function RoomsPage() {
                                 <label className="form-label">Mahsulot</label>
 
                                 {/* 🎨 Custom styled dropdown replaces native <select> */}
-                                <div style={{ position: 'relative' }}>
-                                    <button type="button"
-                                        onClick={(e) => { e.stopPropagation(); setProductDropdownOpen(o => !o); }}
-                                        style={{
-                                            width: '100%', padding: '12px 16px',
-                                            background: 'var(--bg-input)', border: '1px solid var(--border-glass)',
-                                            borderRadius: 'var(--radius-md)', color: productForm.product_id ? 'var(--text-primary)' : 'var(--text-muted)',
-                                            cursor: 'pointer', fontSize: '0.9rem', textAlign: 'left',
-                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                            transition: 'border-color 0.2s'
-                                        }}
-                                    >
-                                        <span>
-                                            {productForm.product_id
-                                                ? (() => { const p = products.find(x => String(x.id) === String(productForm.product_id)); return p ? `${p.name} — ${formatCurrency(p.sell_price)}` : 'Tanlang...'; })()
-                                                : 'Tanlang...'}
-                                        </span>
-                                        <span style={{ opacity: 0.5, fontSize: '0.75rem' }}>{productDropdownOpen ? '▲' : '▼'}</span>
-                                    </button>
-
-                                    {productDropdownOpen && (
-                                        <div
-                                            onClick={e => e.stopPropagation()}
-                                            style={{
-                                                position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 200,
-                                                background: 'var(--bg-elevated)', border: '1px solid var(--border-glass)',
-                                                borderRadius: 'var(--radius-md)', overflow: 'hidden',
-                                                backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-                                                boxShadow: 'var(--shadow-lg)', maxHeight: 220, overflowY: 'auto'
-                                            }}
-                                        >
-                                            {products.filter(p => p.quantity > 0 && p.is_active).length === 0 && (
-                                                <div style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Mavjud mahsulot yo'q</div>
-                                            )}
-                                            {products.filter(p => p.quantity > 0 && p.is_active).map(p => (
-                                                <div key={p.id}
-                                                    onClick={() => {
-                                                        setProductForm({ ...productForm, product_id: p.id });
-                                                        setProductDropdownOpen(false);
-                                                    }}
-                                                    style={{
-                                                        padding: '11px 16px', cursor: 'pointer', fontSize: '0.9rem',
-                                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                        background: String(productForm.product_id) === String(p.id) ? 'rgba(255,214,10,0.1)' : 'transparent',
-                                                        borderLeft: String(productForm.product_id) === String(p.id) ? '3px solid var(--accent-primary)' : '3px solid transparent',
-                                                        transition: 'background 0.15s'
-                                                    }}
-                                                    onMouseEnter={e => { if (String(productForm.product_id) !== String(p.id)) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                                                    onMouseLeave={e => { if (String(productForm.product_id) !== String(p.id)) e.currentTarget.style.background = 'transparent'; }}
-                                                >
-                                                    <span>
-                                                        <span style={{ fontWeight: 600 }}>{p.name}</span>
-                                                        <span style={{ color: 'var(--text-muted)', marginLeft: 8, fontSize: '0.8rem' }}>{p.category}</span>
-                                                    </span>
-                                                    <span style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(p.sell_price)}</span>
-                                                        <span style={{
-                                                            fontSize: '0.75rem', padding: '2px 8px',
-                                                            background: p.quantity <= (p.low_stock_threshold || 5) ? 'var(--accent-danger-soft)' : 'var(--accent-success-soft)',
-                                                            color: p.quantity <= (p.low_stock_threshold || 5) ? 'var(--accent-danger)' : 'var(--accent-success)',
-                                                            borderRadius: 6, fontWeight: 600
-                                                        }}>{p.quantity} ta</span>
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <CustomSelect
+                                    value={productForm.product_id}
+                                    onChange={v => setProductForm({ ...productForm, product_id: v })}
+                                    options={products.filter(p => p.quantity > 0 && p.is_active).map(p => ({
+                                        value: p.id,
+                                        label: (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                                <span>
+                                                    <span style={{ fontWeight: 600 }}>{p.name}</span>
+                                                    <span style={{ color: 'var(--text-muted)', marginLeft: 8, fontSize: '0.8rem' }}>{p.category}</span>
+                                                </span>
+                                                <span style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                                    <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>{formatCurrency(p.sell_price)}</span>
+                                                    <span style={{
+                                                        fontSize: '0.75rem', padding: '2px 8px',
+                                                        background: p.quantity <= (p.low_stock_threshold || 5) ? 'var(--accent-danger-soft)' : 'var(--accent-success-soft)',
+                                                        color: p.quantity <= (p.low_stock_threshold || 5) ? 'var(--accent-danger)' : 'var(--accent-success)',
+                                                        borderRadius: 6, fontWeight: 600
+                                                    }}>{p.quantity} ta</span>
+                                                </span>
+                                            </div>
+                                        )
+                                    }))}
+                                    placeholder="Tanlang..."
+                                />
                             </div>
 
                             <div className="form-group">
                                 <label className="form-label">Soni</label>
-                                <input type="number" className="form-input" min="1"
-                                    max={productForm.product_id ? (products.find(p => String(p.id) === String(productForm.product_id))?.quantity || 999) : 999}
-                                    required
-                                    value={productForm.quantity}
-                                    onChange={e => setProductForm({ ...productForm, quantity: parseInt(e.target.value) || 1 })} />
+                                <div className="flex gap-8">
+                                    <button type="button" className="btn btn-secondary" style={{ padding: '0 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)' }} onClick={() => setProductForm({ ...productForm, quantity: Math.max(1, (productForm.quantity || 1) - 1) })}>-</button>
+                                    <input type="number" className="form-input text-center" min="1"
+                                        max={productForm.product_id ? (products.find(p => String(p.id) === String(productForm.product_id))?.quantity || 999) : 999}
+                                        required
+                                        value={productForm.quantity === '' ? '' : productForm.quantity}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setProductForm({ ...productForm, quantity: val === '' ? '' : parseInt(val) });
+                                        }} />
+                                    <button type="button" className="btn btn-secondary" style={{ padding: '0 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)' }} onClick={() => {
+                                        const maxQty = productForm.product_id ? (products.find(p => String(p.id) === String(productForm.product_id))?.quantity || 999) : 999;
+                                        setProductForm({ ...productForm, quantity: Math.min(maxQty, (productForm.quantity || 1) + 1) });
+                                    }}>+</button>
+                                </div>
                                 {productForm.product_id && (() => {
                                     const p = products.find(x => String(x.id) === String(productForm.product_id));
                                     return p && productForm.quantity > p.quantity ? (
@@ -879,6 +1032,108 @@ function RoomsPage() {
                 </div>,
                 document.body
             )}
+
+            {/* 🗓️ Modals: BRON QILISH */}
+            {showBookingModal && selectedRoom && createPortal(
+                <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
+                    <div className="modal animate-scale-up" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+                        <div className="modal-header">
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#ffa500' }}>
+                                <CalendarPlus size={20} /> Xonani band qilish — {selectedRoom.name}
+                            </h3>
+                            <button className="btn btn-ghost" onClick={() => setShowBookingModal(false)}><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleBookRoom}>
+                            <div className="form-group">
+                                <label className="form-label">Telefon raqami</label>
+                                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                                    <span style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.95rem', paddingLeft: '12px' }}>+998</span>
+                                    <input type="text" className="form-input" placeholder="901234567" required autoFocus
+                                        style={{ border: 'none', background: 'transparent', boxShadow: 'none' }}
+                                        value={bookingForm.customer_phone}
+                                        maxLength={9}
+                                        onBlur={() => setPhoneTouched(true)}
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/[^0-9]/g, '');
+                                            setBookingForm({ ...bookingForm, customer_phone: val.substring(0, 9) });
+                                        }} />
+                                </div>
+                                {phoneTouched && bookingForm.customer_phone.length > 0 && bookingForm.customer_phone.length < 9 && (
+                                    <div style={{ color: 'var(--accent-danger)', fontSize: '0.8rem', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        ⚠️ Raqam to'liq emas (9 ta raqam bo'lishi kerak)
+                                    </div>
+                                )}
+                            </div>
+                            <div className="form-group mb-24">
+                                <label className="form-label">Sana</label>
+                                <div className="flex p-4" style={{ background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                                    <button type="button"
+                                        style={{
+                                            flex: 1, padding: '10px 0', fontSize: '0.95rem', fontWeight: 600,
+                                            borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                                            background: bookingForm.date === getTodayDate() ? 'var(--accent-primary)' : 'transparent',
+                                            color: bookingForm.date === getTodayDate() ? '#000' : 'var(--text-secondary)',
+                                            boxShadow: bookingForm.date === getTodayDate() ? '0 2px 8px rgba(255, 214, 10, 0.3)' : 'none'
+                                        }}
+                                        onClick={() => setBookingForm({ ...bookingForm, date: getTodayDate() })}>
+                                        Bugun
+                                    </button>
+                                    <button type="button"
+                                        style={{
+                                            flex: 1, padding: '10px 0', fontSize: '0.95rem', fontWeight: 600,
+                                            borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                                            background: bookingForm.date === getTomorrowDate() ? 'var(--accent-primary)' : 'transparent',
+                                            color: bookingForm.date === getTomorrowDate() ? '#000' : 'var(--text-secondary)',
+                                            boxShadow: bookingForm.date === getTomorrowDate() ? '0 2px 8px rgba(255, 214, 10, 0.3)' : 'none'
+                                        }}
+                                        onClick={() => setBookingForm({ ...bookingForm, date: getTomorrowDate() })}>
+                                        Ertaga
+                                    </button>
+                                    <button type="button"
+                                        style={{
+                                            flex: 1, padding: '10px 0', fontSize: '0.95rem', fontWeight: 600,
+                                            borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                                            background: bookingForm.date === getDayAfterTomorrowDate() ? 'var(--accent-primary)' : 'transparent',
+                                            color: bookingForm.date === getDayAfterTomorrowDate() ? '#000' : 'var(--text-secondary)',
+                                            boxShadow: bookingForm.date === getDayAfterTomorrowDate() ? '0 2px 8px rgba(255, 214, 10, 0.3)' : 'none'
+                                        }}
+                                        onClick={() => setBookingForm({ ...bookingForm, date: getDayAfterTomorrowDate() })}>
+                                        Indinga
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid-2 gap-16">
+                                <div className="form-group" style={{ zIndex: 10 }}>
+                                    <label className="form-label">Qachondan</label>
+                                    <CustomSelect
+                                        value={bookingForm.from_time}
+                                        onChange={v => setBookingForm({ ...bookingForm, from_time: v })}
+                                        options={availableTimeOptions}
+                                    />
+                                </div>
+                                <div className="form-group" style={{ zIndex: 9 }}>
+                                    <label className="form-label">Qachongacha</label>
+                                    <CustomSelect
+                                        value={bookingForm.until_time}
+                                        onChange={v => setBookingForm({ ...bookingForm, until_time: v })}
+                                        options={[{ value: '', label: 'VIP (Cheksiz)' }, ...baseTimeOptions]}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="modal-actions mt-24">
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowBookingModal(false)}>Bekor qilish</button>
+                                <button type="submit" className="btn" disabled={bookingForm.customer_phone.length !== 9} style={{ background: bookingForm.customer_phone.length === 9 ? 'rgba(255,165,0,0.15)' : 'var(--bg-elevated)', color: bookingForm.customer_phone.length === 9 ? '#ffa500' : 'var(--text-muted)', border: bookingForm.customer_phone.length === 9 ? '1px solid rgba(255,165,0,0.3)' : '1px solid var(--border-subtle)', cursor: bookingForm.customer_phone.length === 9 ? 'pointer' : 'not-allowed' }}>
+                                    <CheckCircle2 size={16} /> Band qilish
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>,
+                document.body
+            )}
+
         </div>
     );
 }

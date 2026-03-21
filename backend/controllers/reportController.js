@@ -116,16 +116,37 @@ const getRangeReport = async (req, res) => {
             [start_date, end_date, req.user.branch_id]
         );
 
-        // 📊 Summary
+        // 📊 Summary with full fields (cash, card, products_amount, etc)
         const summaryResult = await query(
             `SELECT 
                 COUNT(*) as total_sessions,
                 COALESCE(SUM(total_amount), 0) as total_revenue,
-                COALESCE(AVG(total_amount), 0) as avg_per_session,
-                COALESCE(SUM(discount_amount), 0) as total_discounts
+                COALESCE(SUM(time_amount), 0) as time_revenue,
+                COALESCE(SUM(products_amount), 0) as products_revenue,
+                COALESCE(SUM(discount_amount), 0) as total_discounts,
+                COUNT(CASE WHEN is_vip = true THEN 1 END) as vip_sessions,
+                COUNT(CASE WHEN payment_method = 'cash' THEN 1 END) as cash_payments,
+                COUNT(CASE WHEN payment_method = 'card' THEN 1 END) as card_payments,
+                COUNT(CASE WHEN payment_method = 'transfer' THEN 1 END) as transfer_payments
              FROM sessions
              WHERE DATE(start_time) BETWEEN $1 AND $2 AND status = 'completed'
                AND room_id IN (SELECT id FROM rooms WHERE branch_id = $3)`,
+            [start_date, end_date, req.user.branch_id]
+        );
+
+        // 🛒 Top sold products for range
+        const productSalesResult = await query(
+            `SELECT p.name, p.category,
+                    SUM(sp.quantity) as total_sold,
+                    SUM(sp.quantity * sp.price_at_sale) as total_sales
+             FROM session_products sp
+             JOIN products p ON sp.product_id = p.id
+             JOIN sessions s ON sp.session_id = s.id
+             WHERE DATE(s.start_time) BETWEEN $1 AND $2 AND s.status = 'completed'
+               AND p.branch_id = $3
+             GROUP BY p.id, p.name, p.category
+             ORDER BY total_sales DESC
+             LIMIT 10`,
             [start_date, end_date, req.user.branch_id]
         );
 
@@ -133,7 +154,8 @@ const getRangeReport = async (req, res) => {
             period: { start_date, end_date },
             summary: summaryResult.rows[0],
             daily_trend: trendResult.rows,
-            room_profitability: roomProfitResult.rows
+            room_profitability: roomProfitResult.rows,
+            top_products: productSalesResult.rows
         });
     } catch (err) {
         console.error('❌ RangeReport error:', err.message);

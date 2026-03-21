@@ -5,6 +5,9 @@
 //    Handles CRUD for products, stock tracking, low-stock alerts,
 //    and product category management.
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
+// 2026-03-21 12:15 (Tashkent) — V6.1 Bug Fixes:
+//    - Fixed inventory logic where quantity=0 was returning both is_low_stock
+//      and is_out_of_stock as true (removed `Kam qoldi` flag from empty products).
 // ============================================
 
 const { query } = require('../config/database');
@@ -15,8 +18,8 @@ const getAllProducts = async (req, res) => {
     try {
         const result = await query(
             `SELECT p.*, 
-                    CASE WHEN p.quantity <= p.low_stock_threshold THEN true ELSE false END as is_low_stock,
-                    CASE WHEN p.quantity = 0 THEN true ELSE false END as is_out_of_stock
+                    CASE WHEN p.quantity > 0 AND p.quantity <= p.low_stock_threshold THEN true ELSE false END as is_low_stock,
+                    CASE WHEN p.quantity <= 0 THEN true ELSE false END as is_out_of_stock
              FROM products p
              WHERE p.branch_id = $1 AND p.is_active = true
              ORDER BY p.category ASC, p.name ASC`,

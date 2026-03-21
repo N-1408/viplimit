@@ -100,7 +100,7 @@ export default function CustomSelect({ value, onChange, options = [], placeholde
                 top: dropPos.top,
                 left: dropPos.left,
                 width: dropPos.width,
-                zIndex: 9999,
+                zIndex: 99999,
                 background: 'var(--bg-elevated)',
                 border: '1px solid var(--border-glass)',
                 borderRadius: 'var(--radius-md)',

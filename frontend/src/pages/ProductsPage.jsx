@@ -7,6 +7,9 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
+// 2026-03-21 12:08 (Tashkent) — V6.0 Apple/Telegram UI Redesign:
+//    - Inherited global CSS variables for tighter grid and paddings.
+//    - Standardized list UI spacing.
 // 2026-03-13 01:53 (Tashkent) — Redesigned with Lucide icons, improved
 //    table styling, and modern modal design.
 // 2026-03-13 05:22 (Tashkent) — UI Polish:
@@ -14,6 +17,9 @@
 //    - 'Bekor' buttons renamed to 'Bekor qilish'
 // 2026-03-14 21:26 (Tashkent) — Added premium DeleteConfirmModal (V5.0)
 // 2026-03-14 21:42 (Tashkent) — Matched Delete Modal style to RoomsPage (V5.1)
+// 2026-03-21 12:15 (Tashkent) — V6.1 Bug Fixes:
+//    - Added global `Escape` key listener to intelligently collapse modals.
+//    - Activated `autoFocus` on the form inputs for rapid keyboard `Enter` ops.
 // ============================================
 
 import { useState, useEffect } from 'react';
@@ -51,7 +57,20 @@ function ProductsPage() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchProducts(); }, []);
+    useEffect(() => {
+        fetchProducts();
+
+        // ⌨️ Global Keyboard Shortcuts
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                setShowModal(false);
+                setShowRestockModal(false);
+                setShowDeleteConfirm(null);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -159,7 +178,7 @@ function ProductsPage() {
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group"><label className="form-label">Nomi</label>
-                                <input type="text" className="form-input" placeholder="Pepsi 0.5l" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+                                <input type="text" className="form-input" placeholder="Pepsi 0.5l" required autoFocus value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
                             <div className="form-group"><label className="form-label">Kategoriya</label>
                                 <CustomSelect
                                     value={form.category}
@@ -205,7 +224,7 @@ function ProductsPage() {
                         <form onSubmit={handleRestock}>
                             <p className="text-muted mb-16">Hozirgi qoldiq: <strong>{restockProduct?.quantity}</strong></p>
                             <div className="form-group"><label className="form-label">Qo'shilayotgan miqdor</label>
-                                <input type="number" className="form-input" min="1" required value={restockQty} onChange={e => setRestockQty(parseInt(e.target.value))} /></div>
+                                <input type="number" className="form-input" min="1" required autoFocus value={restockQty} onChange={e => setRestockQty(parseInt(e.target.value) || 1)} /></div>
                             <div className="modal-actions">
                                 <button type="button" className="btn btn-ghost" onClick={() => setShowRestockModal(false)}>Bekor qilish</button>
                                 <button type="submit" className="btn btn-success"><PackagePlus size={16} /> Kiritish</button>

@@ -7,6 +7,11 @@
  * 📅 Created: 2026-03-12 05:51 (Tashkent Time)
  * ============================================
  * 📋 CHANGE LOG:
+ * 2026-03-21 12:12 (Tashkent) — V6.1 Bug Fixes:
+ *    - Removed native input spin buttons (arrows) for custom UI +/- buttons.
+ * 2026-03-21 12:06 (Tashkent) — V4.0 Ultra-Compact Premium Design:
+ *    - Adjusted border radiuses and card paddings strictly to Apple/Telegram UI guidelines.
+ *    - Reduced excessive padding/margin utilities for dense data displays.
  * 2026-03-13 03:20 (Tashkent) — v3.0 Premium Elite UI: Apple & Telegram
  *    Dark Mode aesthetics. Clean layout, removed aggressive glows, updated
  *    typography for better readability, and introduced solid black buttons
@@ -72,10 +77,10 @@
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 
     /* Fluid Curves */
-    --radius-sm: 10px;
-    --radius-md: 16px;
-    --radius-lg: 24px;
-    --radius-xl: 32px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
     --radius-full: 9999px;
 
     /* Butter-smooth animations */
@@ -396,8 +401,7 @@ a:hover {
     background: var(--bg-card);
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-xl);
-    /* Softer curves */
-    padding: 28px;
+    padding: 20px;
     transition: all var(--transition-spring);
     box-shadow: var(--shadow-sm);
     backdrop-filter: blur(40px);
@@ -414,10 +418,10 @@ a:hover {
     background: var(--bg-card);
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-xl);
-    padding: 28px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     transition: all var(--transition-spring);
     position: relative;
     overflow: hidden;
@@ -1587,6 +1591,29 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.gap-48 {
+    gap: 48px;
+}
+
+/* ============================================
+ * ⌨️ Remove Native Number Spinners
+ * ============================================ */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.gap-12 {
+    gap: 12px;
 }
 
 .gap-8 {

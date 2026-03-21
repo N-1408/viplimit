@@ -7,6 +7,8 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
+// 2026-03-21 12:08 (Tashkent) — V6.0 Apple/Telegram UI Redesign:
+//    - Inherited global CSS variables for tighter card paddings.
 // 2026-03-13 03:20 (Tashkent) — v3.0 Premium Elite UI: Switched to Apple/TG
 //    clean aesthetic. Removed aggressive glows and simplified layout.
 // ============================================

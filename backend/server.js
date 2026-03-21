@@ -57,6 +57,9 @@ app.use('/api/auth', require('./routes/authRoutes'));
 // 🚪 Room management routes
 app.use('/api/rooms', require('./routes/roomRoutes'));
 
+// 📅 Reservation routes
+app.use('/api/reservations', require('./routes/reservationRoutes'));
+
 // 🎮 Session & billing routes
 app.use('/api/sessions', require('./routes/sessionRoutes'));
 

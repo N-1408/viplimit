@@ -20,9 +20,22 @@ const getAllRooms = async (req, res) => {
                     s.is_vip as session_is_vip,
                     s.is_unlimited as session_is_unlimited,
                     s.scheduled_end as session_scheduled_end,
-                    s.products_amount as session_products_amount
+                    s.products_amount as session_products_amount,
+                    res.id as reservation_id,
+                    res.customer_name as reservation_customer,
+                    res.customer_phone as reservation_phone,
+                    res.reserved_from as reservation_from,
+                    res.reserved_until as reservation_until,
+                    res.notes as reservation_notes
              FROM rooms r
              LEFT JOIN sessions s ON r.id = s.room_id AND s.status = 'active'
+             LEFT JOIN LATERAL (
+                 SELECT * FROM reservations 
+                 WHERE room_id = r.id AND status IN ('pending', 'confirmed') 
+                   AND reserved_until > NOW()
+                 ORDER BY reserved_from ASC
+                 LIMIT 1
+             ) res ON true
              WHERE r.branch_id = $1 AND r.is_active = true
              ORDER BY r.name ASC`,
             [req.user.branch_id]
@@ -44,9 +57,22 @@ const getRoomById = async (req, res) => {
                     s.start_time as session_start,
                     s.is_vip as session_is_vip,
                     s.is_unlimited as session_is_unlimited,
-                    s.scheduled_end as session_scheduled_end
+                    s.scheduled_end as session_scheduled_end,
+                    res.id as reservation_id,
+                    res.customer_name as reservation_customer,
+                    res.customer_phone as reservation_phone,
+                    res.reserved_from as reservation_from,
+                    res.reserved_until as reservation_until,
+                    res.notes as reservation_notes
              FROM rooms r
              LEFT JOIN sessions s ON r.id = s.room_id AND s.status = 'active'
+             LEFT JOIN LATERAL (
+                 SELECT * FROM reservations 
+                 WHERE room_id = r.id AND status IN ('pending', 'confirmed') 
+                   AND reserved_until > NOW()
+                 ORDER BY reserved_from ASC
+                 LIMIT 1
+             ) res ON true
              WHERE r.id = $1 AND r.branch_id = $2`,
             [req.params.id, req.user.branch_id]
         );
