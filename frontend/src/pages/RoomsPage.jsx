@@ -53,7 +53,8 @@ import {
     Plus, Play, Square, ShoppingCart, Clock, Infinity, Monitor,
     Users, MoreVertical, Pencil, Trash2, X, Receipt,
     Banknote, CreditCard, Timer, Hourglass, CheckCircle2,
-    Gamepad2, PowerOff, Shield, CalendarPlus, CalendarClock, CalendarX2
+    Gamepad2, PowerOff, Shield, CalendarPlus, CalendarClock, CalendarX2,
+    ArrowUpDown, GripVertical, Check
 } from 'lucide-react';
 
 // Helpers for Date logic
@@ -115,6 +116,33 @@ function RoomsPage() {
     // 📱 Long press timer ref for mobile
     const longPressTimer = useRef(null);
 
+    // 🔄 Reorder mode state
+    const [reorderMode, setReorderMode] = useState(false);
+    const [draggedIdx, setDraggedIdx] = useState(null);
+    const [reorderRooms, setReorderRooms] = useState([]);
+    const [savingOrder, setSavingOrder] = useState(false);
+    // 🔗 Ref to always have latest reorderRooms (avoids stale closure in keydown)
+    const reorderRoomsRef = useRef([]);
+    useEffect(() => { reorderRoomsRef.current = reorderRooms; }, [reorderRooms]);
+
+    // 🔄 Save reorder function (shared between Enter key, button click)
+    const saveReorder = async () => {
+        const currentOrder = reorderRoomsRef.current;
+        if (!currentOrder.length) return;
+        setSavingOrder(true);
+        try {
+            const order = currentOrder.map((r, i) => ({ id: r.id, sort_order: i }));
+            await api.put('/rooms/reorder', { order });
+            setRooms([...currentOrder]);
+            setReorderMode(false);
+            setReorderRooms([]);
+        } catch (err) {
+            console.error('Reorder error:', err);
+        } finally {
+            setSavingOrder(false);
+        }
+    };
+
     // Handle global click to close context menu and Esc key
     useEffect(() => {
         const handleClick = () => {
@@ -122,14 +150,25 @@ function RoomsPage() {
         };
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
+                // 🔄 If in reorder mode, exit it first
+                if (reorderMode) {
+                    setReorderMode(false);
+                    setReorderRooms([]);
+                    return;
+                }
                 setShowRoomModal(false);
                 setShowStartModal(false);
                 setShowStopModal(false);
                 setShowProductModal(false);
                 setShowBillModal(false);
                 setShowBookingModal(false);
-                setShowDeleteConfirm(null); // Close delete confirm modal
+                setShowDeleteConfirm(null);
                 setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
+            }
+            // ⌨️ Enter saves reorder
+            if (e.key === 'Enter' && reorderMode && !savingOrder) {
+                e.preventDefault();
+                saveReorder();
             }
         };
         document.addEventListener('click', handleClick);
@@ -138,9 +177,9 @@ function RoomsPage() {
             document.removeEventListener('click', handleClick);
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, []);
+    }, [reorderMode, savingOrder]);
 
-    // 📝 Form state
+    // �📝 Form state
     const [editRoom, setEditRoom] = useState(null);
     // const [selectedRoom, setSelectedRoom] = useState(null); // Moved to modal states
     const [billData, setBillData] = useState(null);
@@ -413,19 +452,35 @@ function RoomsPage() {
                     <p className="page-subtitle">{freeCount} ta bo'sh · {busyCount} ta band</p>
                 </div>
                 {hasRole('manager', 'owner') && (
-                    <button className="btn btn-primary" onClick={() => {
-                        setEditRoom(null);
-                        setRoomForm({ name: '', console_type: 'PS5', capacity: 4, hourly_rate: '', max_players: 4 });
-                        setShowRoomModal(true);
-                    }}>
-                        <Plus size={18} /> Yangi xona
-                    </button>
+                    reorderMode ? (
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                <ArrowUpDown size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                                Xonalarni sudrab joyini almashtiring
+                            </span>
+                            <button className="btn btn-ghost" onClick={() => {
+                                setReorderMode(false);
+                                setReorderRooms([]);
+                            }}>Bekor qilish</button>
+                            <button className="btn btn-primary" disabled={savingOrder} onClick={saveReorder}>
+                                <Check size={16} /> {savingOrder ? 'Saqlanmoqda...' : 'Saqlash'}
+                            </button>
+                        </div>
+                    ) : (
+                        <button className="btn btn-primary" onClick={() => {
+                            setEditRoom(null);
+                            setRoomForm({ name: '', console_type: 'PS5', capacity: 4, hourly_rate: '', max_players: 4 });
+                            setShowRoomModal(true);
+                        }}>
+                            <Plus size={18} /> Yangi xona
+                        </button>
+                    )
                 )}
             </div>
 
             {/* 🎮 Room Cards Grid */}
             <div className="grid-rooms">
-                {rooms.map(room => {
+                {(reorderMode ? reorderRooms : rooms).map((room, roomIdx) => {
                     const session = room.active_session;
                     const isBusy = room.status === 'busy' && session;
                     const isVip = session?.is_vip || session?.is_unlimited;
@@ -433,11 +488,32 @@ function RoomsPage() {
                     const cardClass = isBusy ? (isVip ? 'vip' : 'busy') : room.status === 'maintenance' ? 'maintenance' : 'free';
 
                     return (
-                        <div key={room.id} className={`card room-card ${cardClass}`}
-                            onContextMenu={(e) => {
+                        <div key={room.id} className={`card room-card ${cardClass}${reorderMode ? ' reorder-wiggle' : ''}`}
+                            draggable={reorderMode}
+                            onDragStart={reorderMode ? (e) => {
+                                setDraggedIdx(reorderMode ? reorderRooms.findIndex(r => r.id === room.id) : null);
+                                e.dataTransfer.effectAllowed = 'move';
+                            } : undefined}
+                            onDragOver={reorderMode ? (e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                            } : undefined}
+                            onDrop={reorderMode ? (e) => {
+                                e.preventDefault();
+                                const targetIdx = reorderRooms.findIndex(r => r.id === room.id);
+                                if (draggedIdx !== null && draggedIdx !== targetIdx) {
+                                    const updated = [...reorderRooms];
+                                    const [moved] = updated.splice(draggedIdx, 1);
+                                    updated.splice(targetIdx, 0, moved);
+                                    setReorderRooms(updated);
+                                }
+                                setDraggedIdx(null);
+                            } : undefined}
+                            onDragEnd={reorderMode ? () => setDraggedIdx(null) : undefined}
+                            style={reorderMode ? { cursor: 'grab', opacity: draggedIdx === (reorderRooms.findIndex(r => r.id === room.id)) ? 0.5 : 1 } : {}}
+                            onContextMenu={reorderMode ? (e) => e.preventDefault() : (e) => {
                                 if (hasRole('manager', 'owner')) {
                                     e.preventDefault();
-                                    // Use absolute client coordinates for perfect precision
                                     setContextMenu({ roomId: room.id, room: room, isBusy: !!isBusy, x: e.clientX, y: e.clientY });
                                 }
                             }}
@@ -521,8 +597,8 @@ function RoomsPage() {
                                 {/* Context menu replaced by global right-click menu */}
                             </div>
 
-                            {/* 🎮 Action buttons */}
-                            <div className="room-card-actions">
+                            {/* 🎮 Action buttons — hidden during reorder mode */}
+                            {!reorderMode && <div className="room-card-actions">
                                 {!isBusy && room.status === 'free' && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                                         <button className="btn btn-success w-full" onClick={() => {
@@ -585,7 +661,7 @@ function RoomsPage() {
                                         </button>
                                     </>
                                 )}
-                            </div>
+                            </div>}
                         </div>
                     );
                 })}
@@ -638,7 +714,7 @@ function RoomsPage() {
                                     <div style={{ height: '1px', background: 'var(--border-glass)', margin: '4px 0' }} />
 
                                     {contextMenu.room.reservation_id ? (
-                                        <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: '#ffa500' }}
+                                        <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: '#ffa500', marginBottom: '4px' }}
                                             onClick={() => {
                                                 handleCancelReservation(contextMenu.room.reservation_id);
                                                 setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
@@ -646,7 +722,7 @@ function RoomsPage() {
                                             <CalendarX2 size={14} /> Bronni bekor qilish
                                         </button>
                                     ) : (
-                                        <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-primary)' }}
+                                        <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-primary)', marginBottom: '4px' }}
                                             onClick={() => {
                                                 setSelectedRoom(contextMenu.room);
                                                 setBookingForm({ customer_phone: '', date: getTodayDate(), from_time: '18:00', until_time: '' });
@@ -657,6 +733,15 @@ function RoomsPage() {
                                             <CalendarPlus size={14} /> Band qilish
                                         </button>
                                     )}
+
+                                    <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-secondary)' }}
+                                        onClick={() => {
+                                            setReorderMode(true);
+                                            setReorderRooms([...rooms]);
+                                            setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
+                                        }}>
+                                        <ArrowUpDown size={14} /> Tartiblash
+                                    </button>
                                 </>
                             )}
                         </div>

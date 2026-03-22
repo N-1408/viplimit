@@ -9,7 +9,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom } = require('../controllers/roomController');
+const { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, reorderRooms } = require('../controllers/roomController');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 
 // 🔒 All routes require authentication
@@ -20,6 +20,9 @@ router.get('/', getAllRooms);
 
 // 🔍 GET /api/rooms/:id — Get single room
 router.get('/:id', getRoomById);
+
+// 🔄 PUT /api/rooms/reorder — Reorder rooms (manager/owner)
+router.put('/reorder', authorizeRoles('manager', 'owner'), reorderRooms);
 
 // ➕ POST /api/rooms — Create room (manager/owner only)
 router.post('/', authorizeRoles('manager', 'owner'), createRoom);

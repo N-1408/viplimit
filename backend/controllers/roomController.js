@@ -37,7 +37,7 @@ const getAllRooms = async (req, res) => {
                  LIMIT 1
              ) res ON true
              WHERE r.branch_id = $1 AND r.is_active = true
-             ORDER BY r.name ASC`,
+             ORDER BY r.sort_order ASC, r.id ASC`,
             [req.user.branch_id]
         );
 
@@ -195,4 +195,27 @@ const deleteRoom = async (req, res) => {
     }
 };
 
-module.exports = { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom };
+// 🔄 PUT /api/rooms/reorder — Reorder rooms
+const reorderRooms = async (req, res) => {
+    try {
+        const { order } = req.body; // [{ id: 1, sort_order: 0 }, { id: 2, sort_order: 1 }, ...]
+        if (!order || !Array.isArray(order)) {
+            return res.status(400).json({ error: "Noto'g'ri ma'lumot." });
+        }
+
+        // 🔄 Update each room's sort_order in a transaction
+        for (const item of order) {
+            await query(
+                'UPDATE rooms SET sort_order = $1 WHERE id = $2 AND branch_id = $3',
+                [item.sort_order, item.id, req.user.branch_id]
+            );
+        }
+
+        res.json({ message: '✅ Xonalar tartibi saqlandi.' });
+    } catch (err) {
+        console.error('❌ ReorderRooms error:', err.message);
+        res.status(500).json({ error: 'Server xatosi.' });
+    }
+};
+
+module.exports = { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, reorderRooms };

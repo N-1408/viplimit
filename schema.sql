@@ -99,6 +99,7 @@ CREATE TABLE rooms (
     vip_hourly_rate DECIMAL(12,2) NOT NULL,                                  -- 💎 VIP narx (soatiga)
     status          room_status NOT NULL DEFAULT 'free',                     -- 🚦 Holati (free/busy/maintenance)
     is_active       BOOLEAN DEFAULT true,                                     -- ✅ Faolmi
+    sort_order      INT DEFAULT 0,                                             -- 🔄 Tartiblash uchun
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP                       -- 📅 Yaratilgan vaqt
 );
 
