@@ -139,4 +139,53 @@ const setupOwner = async (req, res) => {
     }
 };
 
-module.exports = { login, getMe, setupOwner };
+// ✏️ PUT /api/auth/update-credentials — Update login and password
+const updateCredentials = async (req, res) => {
+    try {
+        const { currentPassword, newUsername, newPassword } = req.body;
+
+        if (!currentPassword || (!newUsername && !newPassword)) {
+            return res.status(400).json({ error: "Barcha kerakli maydonlarni to'ldiring." });
+        }
+
+        const result = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: "Foydalanuvchi topilmadi." });
+
+        const user = result.rows[0];
+        const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Eski parol noto'g'ri." });
+        }
+
+        let updates = [];
+        let values = [];
+        let idx = 1;
+
+        if (newUsername && newUsername !== user.username) {
+            const existing = await query('SELECT id FROM users WHERE username = $1', [newUsername]);
+            if (existing.rows.length > 0) return res.status(400).json({ error: "Bu username band." });
+
+            updates.push(`username = $${idx++}`);
+            values.push(newUsername);
+        }
+
+        if (newPassword) {
+            const salt = await bcrypt.genSalt(10);
+            const password_hash = await bcrypt.hash(newPassword, salt);
+            updates.push(`password_hash = $${idx++}`);
+            values.push(password_hash);
+        }
+
+        if (updates.length > 0) {
+            values.push(req.user.id);
+            await query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+        }
+
+        res.json({ message: "Ma'lumotlar muvaffaqiyatli yangilandi!" });
+    } catch (err) {
+        console.error('Update credentials error:', err.message);
+        res.status(500).json({ error: "Server xatosi." });
+    }
+};
+
+module.exports = { login, getMe, setupOwner, updateCredentials };

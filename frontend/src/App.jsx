@@ -13,6 +13,7 @@ import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
 import RoomsPage from './pages/RoomsPage';
 import ProductsPage from './pages/ProductsPage';
+import ExpensesPage from './pages/ExpensesPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 
@@ -75,6 +76,13 @@ function App() {
             <Route path="/products" element={
                 <ProtectedRoute>
                     <AppLayout><ProductsPage /></AppLayout>
+                </ProtectedRoute>
+            } />
+
+            {/* 💸 Expenses (manager + owner) */}
+            <Route path="/expenses" element={
+                <ProtectedRoute roles={['manager', 'owner']}>
+                    <AppLayout><ExpensesPage /></AppLayout>
                 </ProtectedRoute>
             } />
 

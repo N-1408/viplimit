@@ -9,7 +9,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { login, getMe, setupOwner } = require('../controllers/authController');
+const { login, getMe, setupOwner, updateCredentials } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 
 // 🔑 POST /api/auth/login — Login
@@ -20,5 +20,8 @@ router.post('/setup', setupOwner);
 
 // 👤 GET /api/auth/me — Get current user (requires auth)
 router.get('/me', authenticateToken, getMe);
+
+// ✏️ PUT /api/auth/update-credentials — Update login and password
+router.put('/update-credentials', authenticateToken, updateCredentials);
 
 module.exports = router;

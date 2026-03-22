@@ -69,6 +69,12 @@ app.use('/api/products', require('./routes/productRoutes'));
 // 📊 Reports & analytics routes
 app.use('/api/reports', require('./routes/reportRoutes'));
 
+// ⚙️ Settings routes
+app.use('/api/settings', require('./routes/settingsRoutes'));
+
+// 💸 Expenses routes
+app.use('/api/expenses', require('./routes/expenseRoutes'));
+
 // ============================================
 // 🏠 HEALTH CHECK
 // ============================================

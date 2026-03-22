@@ -61,6 +61,7 @@ CREATE TABLE branches (
     name        VARCHAR(100) NOT NULL,                      -- 🏷️ Filial nomi
     address     TEXT,                                       -- 📍 Manzil
     phone       VARCHAR(20),                                -- 📞 Telefon
+    settings    JSONB DEFAULT '{"consoles": ["PS3", "PS4", "PS5"]}', -- ⚙️ Filial sozlamalari (konsol turlari va h.k)
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP         -- 📅 Yaratilgan vaqt
 );
 
@@ -232,3 +233,20 @@ CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
 -- ============================================
 -- ✅ Schema created successfully!
 -- ============================================
+
+-- ============================================
+-- 💸 10. EXPENSES — Xarajatlar
+-- ============================================
+CREATE TABLE IF NOT EXISTS expenses (
+    id          SERIAL PRIMARY KEY,
+    branch_id   INT NOT NULL REFERENCES branches(id) ON DELETE CASCADE,    -- 🏢 Filial
+    user_id     INT REFERENCES users(id) ON DELETE SET NULL,               -- 👤 Kim qo'shdi
+    amount      DECIMAL(14, 2) NOT NULL,                                   -- 💰 Summa
+    currency    VARCHAR(5) NOT NULL DEFAULT 'UZS',                         -- 💱 Valyuta (UZS / USD)
+    category    VARCHAR(50) NOT NULL DEFAULT 'Boshqa',                     -- 🏷️ Kategoriya
+    description TEXT,                                                       -- 📝 Izoh
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP                        -- 📅 Vaqt
+);
+
+CREATE INDEX idx_expenses_branch ON expenses(branch_id);
+CREATE INDEX idx_expenses_created ON expenses(created_at);

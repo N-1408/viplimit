@@ -96,7 +96,7 @@ function ReportsPage() {
             <div className="section-header flex-between" style={{ alignItems: 'flex-start' }}>
                 <div>
                     <h1 className="page-title" style={{ fontSize: '1.25rem' }}><BarChart3 size={22} /> Hisobotlar</h1>
-                    <p className="page-subtitle">Business tahlili va moliyaviy natijalar</p>
+                    <p className="page-subtitle">Daromad, sessiyalar va moliyaviy natijalarni tahlil qiling</p>
                 </div>
                 <div style={{ width: '200px' }}>
                     <CustomSelect

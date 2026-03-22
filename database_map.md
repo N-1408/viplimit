@@ -16,6 +16,7 @@
 | 7 | `products` | Mahsulotlar (inventory) | Products Page |
 | 8 | `session_products` | Sessiyada sotilgan mahsulotlar | Rooms Dashboard |
 | 9 | `audit_logs` | Nazorat jurnali (xavfsizlik) | Owner Panel |
+| 10 | `expenses` | Operatsion xarajatlar | Expenses Page |
 
 ## 🔗 Jadvallar aloqalari
 
@@ -39,6 +40,8 @@ erDiagram
     
     sessions ||--o{ session_products : "contains"
     products ||--o{ session_products : "sold in"
+    branches ||--o{ expenses : "has"
+    users ||--o{ expenses : "logs"
 ```
 
 ## 📄 Sahifalar va jadvallar bog'lanishi
@@ -49,5 +52,6 @@ erDiagram
 | **Rooms Dashboard** | `rooms`, `sessions`, `session_products`, `reservations`, `products` | Asosiy ish paneli |
 | **Products** | `products` | Mahsulotlar CRUD + Inventory |
 | **Reports** | `sessions`, `session_products`, `products`, `rooms` | Hisobotlar |
+| **Expenses** | `expenses`, `users` | Xarajatlar kiritish va ko'rish |
 | **Settings** | `users`, `branches`, `pricing_rules`, `rooms` | Sozlamalar |
 | **Audit Logs** | `audit_logs` | Nazorat jurnali (faqat Owner) |
