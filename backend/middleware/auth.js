@@ -5,6 +5,8 @@
 //    Extracts user info from token and attaches to req.user.
 //    Also includes role-based access control middleware.
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
+// 2026-03-24 16:32 (Tashkent) — 🔒 #8 fix: authenticateToken endi token xatosi 
+//    uchun 401 (403 emas) qaytaradi. Bu frontendda logoutni to'g'ri ishlatadi.
 // ============================================
 
 const jwt = require('jsonwebtoken');
@@ -25,7 +27,8 @@ const authenticateToken = (req, res, next) => {
         req.user = decoded; // { id, username, role, branch_id }
         next();
     } catch (err) {
-        return res.status(403).json({ error: '❌ Token yaroqsiz yoki muddati o\'tgan.' });
+        // 🔒 Token EXPIRED or INVALID should be 401 (Unauthorized), not 403 (Forbidden)
+        return res.status(401).json({ error: '❌ Token yaroqsiz yoki muddati o\'tgan.' });
     }
 };
 
