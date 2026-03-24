@@ -6,6 +6,10 @@
 //    for their branch. Supports optional date-range filtering.
 // 📅 Created: 2026-03-22 16:30 (Tashkent Time)
 // ============================================
+// 📋 CHANGE LOG:
+// 2026-03-24 16:13 (Tashkent) — 🔒 #7: deleteExpense ichidagi rol tekshiruvi
+//    olib tashlandi. Endi route middleware (authorizeRoles) orqali tekshiriladi.
+// ============================================
 
 const { query } = require('../config/database');
 
@@ -81,11 +85,9 @@ const addExpense = async (req, res) => {
 };
 
 // 🗑️ DELETE /api/expenses/:id — Delete an expense
+// 🔒 Rol tekshiruvi route middleware'da (authorizeRoles) — controller'da kerak emas
 const deleteExpense = async (req, res) => {
     try {
-        if (req.user.role !== 'owner' && req.user.role !== 'manager') {
-            return res.status(403).json({ error: "Sizda bunday huquq yo'q." });
-        }
 
         const result = await query(
             `DELETE FROM expenses WHERE id = $1 AND branch_id = $2 RETURNING id`,

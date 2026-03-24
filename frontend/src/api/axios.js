@@ -6,6 +6,10 @@
 //    Handles 401 responses by redirecting to login.
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
+// 📋 CHANGE LOG:
+// 2026-03-24 16:13 (Tashkent) — 🔒 #8: 401 va 403 ajratildi.
+//    401 = token expired → logout. 403 = ruxsat yo'q → reject (logout qilmaslik).
+// ============================================
 
 import axios from 'axios';
 
@@ -33,14 +37,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            // 🔒 Token expired or invalid — redirect to login
+        // 🔒 401 = Token expired/invalid — logout va login sahifasiga yo'naltirish
+        if (error.response?.status === 401) {
             localStorage.removeItem('viplimit_token');
             localStorage.removeItem('viplimit_user');
             window.location.href = '/login';
         }
+        // 🚫 403 = Ruxsat yo'q — faqat reject (logout QILMASLIK!)
+        // Foydalanuvchi login qilgan, lekin bu amalni bajarish huquqi yo'q
         return Promise.reject(error);
     }
 );
 
 export default api;
+

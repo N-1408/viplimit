@@ -6,15 +6,22 @@
 //    and registers all API routes. Handles graceful shutdown.
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
+// 📋 CHANGE LOG:
+// 2026-03-24 16:13 (Tashkent) — 🛡️ #10: Sanitize middleware qo'shildi (XSS himoya).
+//    Helmet.js (HTTP xavfsizlik headers) va Morgan (HTTP logging) qo'shildi.
+// ============================================
 
 // 🔧 Load environment variables FIRST
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 const http = require('http');
 const { Server } = require('socket.io');
 const { pool } = require('./config/database');
+const { sanitizeBody } = require('./middleware/sanitize');
 
 // 📦 Create Express app and HTTP server
 const app = express();
@@ -38,8 +45,17 @@ app.use(cors({
     credentials: true
 }));
 
+// 🛡️ Helmet — HTTP xavfsizlik headers (XSS, Clickjacking himoyasi)
+app.use(helmet());
+
+// 📋 Morgan — HTTP so'rovlarni log qilish
+app.use(morgan('dev'));
+
 // 📥 Parse JSON request bodies
 app.use(express.json());
+
+// 🛡️ Sanitize — barcha req.body string qiymatlarni tozalash (XSS oldini olish)
+app.use(sanitizeBody);
 
 // 🔌 Make io accessible in routes (for real-time events)
 app.use((req, res, next) => {

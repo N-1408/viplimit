@@ -6,8 +6,12 @@
 //    Room data includes console type, pricing, capacity, and availability.
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
+// 📋 CHANGE LOG:
+// 2026-03-24 16:13 (Tashkent) — 🔒 #6: reorderRooms transaction ichiga olindi.
+//    N+1 muammo hal qilindi — barcha UPDATE'lar atomik.
+// ============================================
 
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 const { logAction, getClientIP } = require('../middleware/auditLogger');
 
 // 📋 GET /api/rooms — Get all rooms for current branch
@@ -196,25 +200,38 @@ const deleteRoom = async (req, res) => {
 };
 
 // 🔄 PUT /api/rooms/reorder — Reorder rooms
+// 🔒 FIX #6: Transaction ichida — barcha UPDATE'lar atomik
 const reorderRooms = async (req, res) => {
+    const client = await pool.connect();
     try {
         const { order } = req.body; // [{ id: 1, sort_order: 0 }, { id: 2, sort_order: 1 }, ...]
         if (!order || !Array.isArray(order)) {
+            client.release();
             return res.status(400).json({ error: "Noto'g'ri ma'lumot." });
         }
 
-        // 🔄 Update each room's sort_order in a transaction
+        // 🔒 Begin transaction — barcha xonalar tartibi atomik yangilanadi
+        await client.query('BEGIN');
+
         for (const item of order) {
-            await query(
+            await client.query(
                 'UPDATE rooms SET sort_order = $1 WHERE id = $2 AND branch_id = $3',
                 [item.sort_order, item.id, req.user.branch_id]
             );
         }
 
+        // ✅ Commit — barcha tartiblar muvaffaqiyatli yangilandi
+        await client.query('COMMIT');
+
         res.json({ message: '✅ Xonalar tartibi saqlandi.' });
     } catch (err) {
+        // 🔒 Rollback on error
+        await client.query('ROLLBACK');
         console.error('❌ ReorderRooms error:', err.message);
         res.status(500).json({ error: 'Server xatosi.' });
+    } finally {
+        // 🔓 Always release client back to pool
+        client.release();
     }
 };
 

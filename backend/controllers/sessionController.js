@@ -7,12 +7,15 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
+// 2026-03-24 16:13 (Tashkent) — 🔒 #3: addProductToSession race condition tuzatildi
+//    (transaction + FOR UPDATE lock). #4: stopSession transaction ichiga olindi.
+//    #5: toggleVip da is_unlimited ham yangilanadi endi.
 // 2026-03-13 01:53 (Tashkent) — VIP logikasi to'g'irlandi: VIP = cheksiz vaqt,
 //    narx oddiy narx bilan bir xil. Batafsil chek (bill receipt) session stop da
 //    qaytariladi. 'transfer' to'lov turi olib tashlandi.
 // ============================================
 
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 const { logAction, getClientIP } = require('../middleware/auditLogger');
 const { calculateDurationMinutes, calculateTimeCost } = require('../utils/helpers');
 
@@ -93,12 +96,17 @@ const startSession = async (req, res) => {
 };
 
 // ⏹️ POST /api/sessions/:id/stop — Stop a session & generate bill receipt
+// 🔒 FIX #4: Transaction bilan atomik operatsiya (session update + room status)
 const stopSession = async (req, res) => {
+    const client = await pool.connect();
     try {
         const { payment_method, discount_amount, discount_reason } = req.body;
 
+        // 🔒 Begin transaction
+        await client.query('BEGIN');
+
         // 🔍 Get active session
-        const sessionResult = await query(
+        const sessionResult = await client.query(
             `SELECT s.*, r.hourly_rate, r.name as room_name, r.console_type
              FROM sessions s
              JOIN rooms r ON s.room_id = r.id
@@ -107,6 +115,7 @@ const stopSession = async (req, res) => {
         );
 
         if (sessionResult.rows.length === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: 'Faol sessiya topilmadi.' });
         }
 
@@ -121,7 +130,7 @@ const stopSession = async (req, res) => {
         const timeCost = calculateTimeCost(durationMinutes, hourlyRate);
 
         // 🛒 Get products list + total for this session
-        const productsListResult = await query(
+        const productsListResult = await client.query(
             `SELECT sp.quantity, sp.price_at_sale, p.name as product_name, p.category
              FROM session_products sp
              JOIN products p ON sp.product_id = p.id
@@ -136,8 +145,8 @@ const stopSession = async (req, res) => {
         const discount = parseFloat(discount_amount) || 0;
         const totalAmount = Math.max(0, timeCost + productsTotal - discount);
 
-        // 📥 Update session
-        await query(
+        // 📥 Update session (in transaction)
+        await client.query(
             `UPDATE sessions SET
                 end_time = $1, closed_by = $2, time_amount = $3,
                 products_amount = $4, discount_amount = $5, discount_reason = $6,
@@ -150,10 +159,13 @@ const stopSession = async (req, res) => {
             ]
         );
 
-        // 🔄 Update room status to 'free'
-        await query('UPDATE rooms SET status = $1 WHERE id = $2', ['free', session.room_id]);
+        // 🔄 Update room status to 'free' (in same transaction)
+        await client.query('UPDATE rooms SET status = $1 WHERE id = $2', ['free', session.room_id]);
 
-        // 📝 Log action
+        // ✅ Commit transaction — both updates succeed or both fail
+        await client.query('COMMIT');
+
+        // 📝 Log action (outside transaction — non-critical)
         await logAction({
             branchId: req.user.branch_id,
             userId: req.user.id,
@@ -198,16 +210,22 @@ const stopSession = async (req, res) => {
             }
         });
     } catch (err) {
+        // 🔒 Rollback on any error
+        await client.query('ROLLBACK');
         console.error('❌ StopSession error:', err.message);
         res.status(500).json({ error: 'Server xatosi.' });
+    } finally {
+        // 🔓 Always release client back to pool
+        client.release();
     }
 };
 
 // 💎 PUT /api/sessions/:id/vip — Toggle VIP mode on active session
+// 🔒 FIX #5: is_unlimited ham is_vip bilan birga yangilanadi
 const toggleVip = async (req, res) => {
     try {
         const result = await query(
-            `UPDATE sessions SET is_vip = NOT is_vip 
+            `UPDATE sessions SET is_vip = NOT is_vip, is_unlimited = NOT is_unlimited
              WHERE id = $1 AND status = 'active' RETURNING *`,
             [req.params.id]
         );
@@ -223,7 +241,7 @@ const toggleVip = async (req, res) => {
             action: 'session_vip_toggle',
             entityType: 'session',
             entityId: req.params.id,
-            newValues: { is_vip: result.rows[0].is_vip },
+            newValues: { is_vip: result.rows[0].is_vip, is_unlimited: result.rows[0].is_unlimited },
             ipAddress: getClientIP(req)
         });
 
@@ -238,65 +256,81 @@ const toggleVip = async (req, res) => {
 };
 
 // 🛒 POST /api/sessions/:id/products — Add product to session
+// 🔒 FIX #3: Transaction + FOR UPDATE lock — race condition oldini olish
 const addProductToSession = async (req, res) => {
+    const client = await pool.connect();
     try {
         const { product_id, quantity } = req.body;
 
         if (!product_id || !quantity || quantity < 1) {
+            client.release();
             return res.status(400).json({ error: 'Mahsulot va soni kiritilishi shart.' });
         }
 
+        // 🔒 Begin transaction
+        await client.query('BEGIN');
+
         // 🔍 Check session is active
-        const sessionCheck = await query(
+        const sessionCheck = await client.query(
             'SELECT id FROM sessions WHERE id = $1 AND status = $2',
             [req.params.id, 'active']
         );
         if (sessionCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            client.release();
             return res.status(404).json({ error: 'Faol sessiya topilmadi.' });
         }
 
-        // 🔍 Get product info and check stock
-        const productResult = await query(
-            'SELECT * FROM products WHERE id = $1 AND branch_id = $2 AND is_active = true',
+        // 🔒 Get product info with FOR UPDATE lock — prevents race condition!
+        const productResult = await client.query(
+            'SELECT * FROM products WHERE id = $1 AND branch_id = $2 AND is_active = true FOR UPDATE',
             [product_id, req.user.branch_id]
         );
 
         if (productResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            client.release();
             return res.status(404).json({ error: 'Mahsulot topilmadi.' });
         }
 
         const product = productResult.rows[0];
 
+        // 📊 Check stock — now safe from race condition!
         if (product.quantity < quantity) {
+            await client.query('ROLLBACK');
+            client.release();
             return res.status(400).json({
                 error: `⚠️ Yetarli mahsulot yo'q. Qoldiq: ${product.quantity}`
             });
         }
 
-        // 📥 Add product to session
-        await query(
+        // 📥 Add product to session (in transaction)
+        await client.query(
             `INSERT INTO session_products (session_id, product_id, quantity, price_at_sale, added_by)
              VALUES ($1, $2, $3, $4, $5)`,
             [req.params.id, product_id, quantity, product.sell_price, req.user.id]
         );
 
-        // 📉 Decrease product stock
-        await query(
+        // 📉 Decrease product stock (in transaction)
+        await client.query(
             'UPDATE products SET quantity = quantity - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
             [quantity, product_id]
         );
 
-        // 💰 Update session products_amount
-        const totalResult = await query(
+        // 💰 Update session products_amount (in transaction)
+        const totalResult = await client.query(
             'SELECT COALESCE(SUM(quantity * price_at_sale), 0) as total FROM session_products WHERE session_id = $1',
             [req.params.id]
         );
-        await query(
+        await client.query(
             'UPDATE sessions SET products_amount = $1 WHERE id = $2',
             [totalResult.rows[0].total, req.params.id]
         );
 
-        // 📝 Log action
+        // ✅ Commit transaction — all operations succeed atomically
+        await client.query('COMMIT');
+
+        // 📝 Log action (outside transaction — non-critical)
         await logAction({
             branchId: req.user.branch_id,
             userId: req.user.id,
@@ -315,8 +349,13 @@ const addProductToSession = async (req, res) => {
             remaining_stock: product.quantity - quantity
         });
     } catch (err) {
+        // 🔒 Rollback on any error
+        await client.query('ROLLBACK');
         console.error('❌ AddProduct error:', err.message);
         res.status(500).json({ error: 'Server xatosi.' });
+    } finally {
+        // 🔓 Always release client back to pool
+        client.release();
     }
 };
 
