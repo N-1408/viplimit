@@ -7,6 +7,7 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
+// 2026-03-24 17:15 (Tashkent) — 📱 Mobile responsiveness: Replaced desktop tooltip context menu with an Apple/Telegram Action Sheet for mobile screens.
 // 2026-03-21 12:08 (Tashkent) — V6.0 Apple/Telegram UI Redesign:
 //    - Inherited global CSS variables for tighter room cards and paddings.
 // 2026-03-13 01:53 (Tashkent) — Major rewrite:
@@ -676,6 +677,77 @@ function RoomsPage() {
             {/* 🖱️ Context Menu (Portal-based for perfect precision) */}
             {contextMenu.roomId && typeof document !== 'undefined' && createPortal(
                 (() => {
+                    const isMobile = window.innerWidth <= 768;
+
+                    // Reusable menu items to ensure consistency between Desktop and Mobile
+                    const menuItems = contextMenu.isBusy ? (
+                        <div style={{ padding: '10px 12px', fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                            <div style={{ color: 'var(--accent-primary)', marginBottom: '4px' }}><Shield size={16} /></div>
+                            Xona band, tahrirlash uchun avval sessiyani yoping
+                        </div>
+                    ) : (
+                        <>
+                            <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', marginBottom: '4px', fontSize: isMobile ? '0.95rem' : '0.85rem', padding: isMobile ? '12px' : '6px 12px' }}
+                                onClick={() => { openEditRoom(contextMenu.room); setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 }); }}>
+                                <Pencil size={18} /> Tahrirlash
+                            </button>
+                            <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--accent-danger)', marginBottom: '4px', fontSize: isMobile ? '0.95rem' : '0.85rem', padding: isMobile ? '12px' : '6px 12px' }}
+                                onClick={() => {
+                                    setShowDeleteConfirm(contextMenu.room);
+                                    setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
+                                }}>
+                                <Trash2 size={18} /> O'chirish
+                            </button>
+
+                            <div style={{ height: '1px', background: 'var(--border-glass)', margin: '4px 0' }} />
+
+                            {contextMenu.room.reservation_id ? (
+                                <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: '#ffa500', marginBottom: '4px', fontSize: isMobile ? '0.95rem' : '0.85rem', padding: isMobile ? '12px' : '6px 12px' }}
+                                    onClick={() => {
+                                        handleCancelReservation(contextMenu.room.reservation_id);
+                                        setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
+                                    }}>
+                                    <CalendarX2 size={18} /> Bronni bekor qilish
+                                </button>
+                            ) : (
+                                <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-primary)', marginBottom: '4px', fontSize: isMobile ? '0.95rem' : '0.85rem', padding: isMobile ? '12px' : '6px 12px' }}
+                                    onClick={() => {
+                                        setSelectedRoom(contextMenu.room);
+                                        setBookingForm({ customer_phone: '', date: getTodayDate(), from_time: '18:00', until_time: '' });
+                                        setPhoneTouched(false);
+                                        setShowBookingModal(true);
+                                        setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
+                                    }}>
+                                    <CalendarPlus size={18} /> Band qilish
+                                </button>
+                            )}
+
+                            <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-secondary)', fontSize: isMobile ? '0.95rem' : '0.85rem', padding: isMobile ? '12px' : '6px 12px' }}
+                                onClick={() => {
+                                    setReorderMode(true);
+                                    setReorderRooms([...rooms]);
+                                    setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
+                                }}>
+                                <ArrowUpDown size={18} /> Tartiblash
+                            </button>
+                        </>
+                    );
+
+                    if (isMobile) {
+                        return (
+                            <div className="action-sheet-overlay" onClick={() => setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 })}>
+                                <div className="action-sheet" onClick={(e) => e.stopPropagation()}>
+                                    <div className="action-sheet-handle"></div>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, textAlign: 'center', marginBottom: '16px', color: 'var(--text-primary)' }}>
+                                        {contextMenu.room?.name || 'Xona'}
+                                    </h3>
+                                    {menuItems}
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // Desktop mode
                     const MENU_W = 180;
                     const MENU_H = contextMenu.isBusy ? 80 : 96;
                     const x = (contextMenu.x + MENU_W > window.innerWidth) ? contextMenu.x - MENU_W : contextMenu.x;
@@ -691,59 +763,7 @@ function RoomsPage() {
                             onClick={(e) => e.stopPropagation()}
                             onContextMenu={(e) => e.preventDefault()}
                         >
-                            {/* Tahrirlash/O'chirish logic */}
-                            {contextMenu.isBusy ? (
-                                <div style={{ padding: '10px 12px', fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                                    <div style={{ color: 'var(--accent-primary)', marginBottom: '4px' }}><Shield size={16} /></div>
-                                    Xona band, tahrirlash uchun avval sessiyani yoping
-                                </div>
-                            ) : (
-                                <>
-                                    <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', marginBottom: '4px' }}
-                                        onClick={() => { openEditRoom(contextMenu.room); setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 }); }}>
-                                        <Pencil size={14} /> Tahrirlash
-                                    </button>
-                                    <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--accent-danger)', marginBottom: '4px' }}
-                                        onClick={() => {
-                                            setShowDeleteConfirm(contextMenu.room);
-                                            setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
-                                        }}>
-                                        <Trash2 size={14} /> O'chirish
-                                    </button>
-
-                                    <div style={{ height: '1px', background: 'var(--border-glass)', margin: '4px 0' }} />
-
-                                    {contextMenu.room.reservation_id ? (
-                                        <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: '#ffa500', marginBottom: '4px' }}
-                                            onClick={() => {
-                                                handleCancelReservation(contextMenu.room.reservation_id);
-                                                setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
-                                            }}>
-                                            <CalendarX2 size={14} /> Bronni bekor qilish
-                                        </button>
-                                    ) : (
-                                        <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-primary)', marginBottom: '4px' }}
-                                            onClick={() => {
-                                                setSelectedRoom(contextMenu.room);
-                                                setBookingForm({ customer_phone: '', date: getTodayDate(), from_time: '18:00', until_time: '' });
-                                                setPhoneTouched(false);
-                                                setShowBookingModal(true);
-                                                setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
-                                            }}>
-                                            <CalendarPlus size={14} /> Band qilish
-                                        </button>
-                                    )}
-
-                                    <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-secondary)' }}
-                                        onClick={() => {
-                                            setReorderMode(true);
-                                            setReorderRooms([...rooms]);
-                                            setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });
-                                        }}>
-                                        <ArrowUpDown size={14} /> Tartiblash
-                                    </button>
-                                </>
-                            )}
+                            {menuItems}
                         </div>
                     );
                 })(),

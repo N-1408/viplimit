@@ -7,6 +7,7 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
+// 2026-03-24 17:15 (Tashkent) — 📱 Mobile Bottom Nav support: NavLinks now stack icons/text and logo hides on mobile (via CSS).
 // 2026-03-13 03:20 (Tashkent) — v3.0 Premium Elite UI: Switched to Apple/TG
 //    clean aesthetic. Used a solid #FFD60A squircle for the logo icon.
 // ============================================

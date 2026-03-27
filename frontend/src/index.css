@@ -7,6 +7,7 @@
  * 📅 Created: 2026-03-12 05:51 (Tashkent Time)
  * ============================================
  * 📋 CHANGE LOG:
+ * 2026-03-24 17:15 (Tashkent) — 📱 Mobile Responsiveness Update: Added Bottom Navigation Bar for phones, Action Sheet for Context Menu.
  * 2026-03-21 12:12 (Tashkent) — V6.1 Bug Fixes:
  *    - Removed native input spin buttons (arrows) for custom UI +/- buttons.
  * 2026-03-21 12:06 (Tashkent) — V4.0 Ultra-Compact Premium Design:
@@ -1503,6 +1504,51 @@ body {
 /* ============================================
  * 📱 Responsive
  * ============================================ */
+/* ============================================
+ * 📱 Action Sheet & Modals (Mobile Bottom Menu)
+ * ============================================ */
+.action-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.action-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-elevated);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    z-index: 10001;
+    animation: sheetSlideUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.05);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-top: 1px solid var(--border-glass);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.action-sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
+    margin: -12px auto 20px;
+}
+
+@keyframes sheetSlideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
 @media (max-width: 1024px) {
     .grid-4 {
         grid-template-columns: repeat(2, 1fr);
@@ -1514,17 +1560,72 @@ body {
 }
 
 @media (max-width: 768px) {
+
+    /* Bottom Navigation Bar styled like Apple/Telegram */
     .app-sidebar {
-        transform: translateX(-100%);
+        position: fixed;
+        bottom: 0;
+        top: auto;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        padding: 8px 12px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom));
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+        z-index: 9999;
+        border-top: 1px solid var(--border-glass);
+        background: rgba(12, 12, 18, 0.85);
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        transform: none;
     }
 
-    .app-sidebar.open {
-        transform: translateX(0);
+    .sidebar-logo,
+    .sidebar-user {
+        display: none;
+        /* Hide logo and user info on mobile nav */
+    }
+
+    .sidebar-nav {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        width: 100%;
+        gap: 0;
+    }
+
+    .sidebar-link {
+        flex-direction: column;
+        padding: 6px 4px;
+        font-size: 0.65rem;
+        gap: 4px;
+        background: transparent !important;
+        border: none !important;
+        justify-content: center;
+        flex: 1;
+        text-align: center;
+        border-radius: 0;
+        color: var(--text-muted);
+    }
+
+    .sidebar-link.active {
+        color: var(--accent-primary) !important;
+    }
+
+    .sidebar-link .link-icon {
+        margin-bottom: 2px;
+        width: 22px;
+        height: 22px;
     }
 
     .app-main {
         margin-left: 0;
         padding: 16px;
+        padding-bottom: 90px;
+        /* Space for the bottom tabs */
     }
 
     .grid-rooms,
@@ -1538,15 +1639,23 @@ body {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+        margin-bottom: 20px;
     }
 
     .modal {
         padding: 22px;
-        max-width: 95%;
+        max-width: 100%;
+        border-radius: 20px;
     }
 
     .login-card {
-        padding: 32px 24px;
+        padding: 32px 20px;
+        margin: 16px;
+    }
+
+    .room-card-actions .btn {
+        padding: 16px;
+        /* larger tap targets for mobile */
     }
 }
 
