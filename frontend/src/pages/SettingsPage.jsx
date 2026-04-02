@@ -68,8 +68,8 @@ function SettingsPage() {
 
             <div className="page-header">
                 <div>
-                    <h1 className="page-title"><Settings size={28} /> Sozlamalar</h1>
-                    <p className="page-subtitle">Klubingiz: <strong style={{ color: 'var(--text-primary)' }}>{user?.branch_name || 'Family Stay'}</strong> &bull; Parollarni yangilang</p>
+                    <h1 className="page-title"><Settings size={28} /> Klub nomi sozlamalari</h1>
+                    <p className="page-subtitle">Parollarni yangilang va kelajakdagi imkoniyatlar bilan tanishing</p>
                 </div>
             </div>
 
@@ -90,16 +90,15 @@ function SettingsPage() {
                 <div style={{ flex: '1 1 min(100%, 400px)', maxWidth: '450px' }}>
 
                     {/* Minimalist Logout Card as requested */}
-                    <div className="card mb-24" style={{ padding: '16px', background: 'var(--bg-elevated)', borderColor: 'rgba(239, 68, 68, 0.15)' }}>
-                        <div className="flex items-center justify-between" style={{ width: '100%' }}>
-                            <div className="flex items-center gap-12">
-                                <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '10px', borderRadius: '10px' }}>
-                                    <LogOut color="var(--accent-danger)" size={18} />
-                                </div>
-                                <h3 className="font-bold" style={{ fontSize: '1.05rem', color: 'var(--accent-danger)' }}>Tizimdan chiqish</h3>
+                    {/* Minimalist Logout Card as requested */}
+                    <div className="card mb-24 flex-between" style={{ padding: '12px 16px', background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '16px' }}>
+                        <div className="flex items-center gap-12">
+                            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '12px' }}>
+                                <LogOut color="#ef4444" size={20} />
                             </div>
-                            <button className="btn btn-sm" onClick={logout} style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-danger)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 14px' }}>Chiqish</button>
+                            <h3 className="font-bold" style={{ fontSize: '1.1rem', color: '#ef4444' }}>Tizimdan chiqish</h3>
                         </div>
+                        <button className="btn btn-sm" onClick={logout} style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 'bold' }}>Chiqish</button>
                     </div>
 
                     <div className="card">

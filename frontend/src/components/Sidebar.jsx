@@ -31,8 +31,7 @@ function Sidebar() {
         { path: '/products', label: 'Mahsulotlar', icon: ShoppingBag, roles: ['admin', 'manager', 'owner'] },
         { path: '/expenses', label: 'Xarajatlar', icon: Wallet, roles: ['manager', 'owner'] },
         { path: '/reports', label: 'Hisobotlar', icon: BarChart3, roles: ['manager', 'owner'] },
-        { path: '/settings', label: 'Sozlamalar', icon: Settings, roles: ['manager', 'owner'] },
-        ...(isSuperAdmin ? [{ path: '/super-admin', label: 'Super Admin', icon: Shield, roles: [] }] : [])
+        { path: '/settings', label: 'Sozlamalar', icon: Settings, roles: ['manager', 'owner'] }
     ];
 
     // 🚪 Logout handler

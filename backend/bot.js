@@ -15,6 +15,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const { query } = require('./config/database');
 
 let bot = null;
+const shepState = {};
 
 /**
  * 🤖 Initialize and start the Telegram bot
@@ -103,6 +104,44 @@ async function startBot(token, webAppUrl) {
         } catch (err) {
             console.error('❌ Bot contact error:', err.message);
             await bot.sendMessage(chatId, '❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
+        }
+    });
+
+    // ============================================
+    // 🕵️‍♂️ Secret /shep command for Super Admin
+    // ============================================
+    bot.onText(/^\/shep$/, async (msg) => {
+        const chatId = msg.chat.id;
+        if (String(chatId) === '1472746219') {
+            shepState[chatId] = true;
+            await bot.sendMessage(chatId, "Parolni kiriting:");
+        }
+    });
+
+    bot.on('message', async (msg) => {
+        if (!msg.text || msg.text.startsWith('/')) return;
+
+        const chatId = msg.chat.id;
+        if (shepState[chatId]) {
+            if (msg.text === 'Devzira') {
+                delete shepState[chatId];
+
+                const baseUrl = webAppUrl || 'https://viplimit.onrender.com';
+                const superAdminUrl = baseUrl.endsWith('/') ? baseUrl + 'super-admin' : baseUrl + '/super-admin';
+
+                await bot.sendMessage(chatId, "✅ Super admin huquqi tasdiqlandi. Pastdagi maxsus tugmadan kiring:", {
+                    reply_markup: {
+                        keyboard: [[{
+                            text: '🛡️ Super Admin panel',
+                            web_app: { url: superAdminUrl }
+                        }]],
+                        resize_keyboard: true,
+                        is_persistent: true
+                    }
+                });
+            } else {
+                delete shepState[chatId];
+            }
         }
     });
 
