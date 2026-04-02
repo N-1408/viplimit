@@ -88,7 +88,7 @@ function SettingsPage() {
             <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
 
                 {/* 🔒 Security & Login (Left Panel) */}
-                <div style={{ flex: '1 1 400px', maxWidth: '450px' }}>
+                <div style={{ flex: '1 1 min(100%, 400px)', maxWidth: '450px' }}>
                     <div className="card">
                         <div className="flex items-center gap-12 mb-24">
                             <KeyRound size={24} className="text-muted" />
@@ -143,7 +143,7 @@ function SettingsPage() {
                 </div>
 
                 {/* 🚀 Tez Kunda Features (Right Panel) */}
-                <div style={{ flex: '2 1 600px' }}>
+                <div style={{ flex: '2 1 min(100%, 600px)' }}>
                     <div className="flex items-center gap-12 mb-24">
                         <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', padding: '8px', borderRadius: 'var(--radius-md)' }}>
                             <Sparkles className="text-muted" size={20} />

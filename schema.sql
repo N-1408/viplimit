@@ -2,13 +2,25 @@
 -- 📁 File: schema.sql — VipLimit Full Database Schema
 -- 👤 Author: User with AI
 -- 📝 Description: Complete PostgreSQL database schema for VipLimit
---    Game Club Management System. Contains all 9 tables:
+--    Game Club Management System. Contains all 13 tables:
 --    branches, users, rooms, pricing_rules, sessions,
---    reservations, products, session_products, audit_logs.
+--    reservations, products, session_products, audit_logs,
+--    expenses, telegram_users, plans, promo_codes.
 -- 📅 Created: 2026-03-12 05:51 (Tashkent Time)
+-- ============================================
+-- 📋 CHANGE LOG:
+-- 2026-04-03 01:28 (Tashkent) — 🤖 Telegram Mini App + Super Admin:
+--    - telegram_users jadvali qo'shildi (TG ↔ Club bog'lanishi)
+--    - plans jadvali qo'shildi (Free/Pro/Enterprise tariflar)
+--    - promo_codes jadvali qo'shildi
+--    - branches jadvaliga plan_id, is_enabled, subscription_until qo'shildi
+--    - users.username constraint: GLOBALLY UNIQUE → BRANCH-SCOPED UNIQUE
 -- ============================================
 
 -- 🧹 Drop existing tables (for fresh install only)
+DROP TABLE IF EXISTS telegram_users CASCADE;
+DROP TABLE IF EXISTS promo_codes CASCADE;
+DROP TABLE IF EXISTS plans CASCADE;
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS session_products CASCADE;
 DROP TABLE IF EXISTS reservations CASCADE;
@@ -17,6 +29,7 @@ DROP TABLE IF EXISTS pricing_rules CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS rooms CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS expenses CASCADE;
 DROP TABLE IF EXISTS branches CASCADE;
 
 -- 🔧 Drop custom ENUM types if they exist
@@ -57,12 +70,15 @@ CREATE TYPE reservation_status AS ENUM ('pending', 'confirmed', 'started', 'canc
 -- 🏢 1. BRANCHES — Filiallar
 -- ============================================
 CREATE TABLE branches (
-    id          SERIAL PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL,                      -- 🏷️ Filial nomi
-    address     TEXT,                                       -- 📍 Manzil
-    phone       VARCHAR(20),                                -- 📞 Telefon
-    settings    JSONB DEFAULT '{"consoles": ["PS3", "PS4", "PS5"]}', -- ⚙️ Filial sozlamalari (konsol turlari va h.k)
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP         -- 📅 Yaratilgan vaqt
+    id                  SERIAL PRIMARY KEY,
+    name                VARCHAR(100) NOT NULL,                      -- 🏷️ Filial nomi
+    address             TEXT,                                       -- 📍 Manzil
+    phone               VARCHAR(20),                                -- 📞 Telefon
+    settings            JSONB DEFAULT '{"consoles": ["PS3", "PS4", "PS5"]}', -- ⚙️ Filial sozlamalari
+    plan_id             INT DEFAULT 1,                              -- 📦 Tarif rejasi (default: Free)
+    is_enabled          BOOLEAN DEFAULT true,                       -- ✅ Super Admin tomonidan yoqilganmi
+    subscription_until  TIMESTAMP,                                  -- 📅 Obuna muddati
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP         -- 📅 Yaratilgan vaqt
 );
 
 -- 🏷️ Default filial (MVP uchun)
@@ -75,7 +91,7 @@ VALUES ('Asosiy Filial', 'Toshkent shahar', '+998901234567');
 CREATE TABLE users (
     id              SERIAL PRIMARY KEY,
     branch_id       INT NOT NULL REFERENCES branches(id) ON DELETE CASCADE,  -- 🏢 Filial
-    username        VARCHAR(50) UNIQUE NOT NULL,                              -- 🔑 Login
+    username        VARCHAR(50) NOT NULL,                                     -- 🔑 Login
     password_hash   VARCHAR(255) NOT NULL,                                    -- 🔒 Hashed parol
     full_name       VARCHAR(100) NOT NULL,                                    -- 👤 Ism familiya
     role            user_role NOT NULL DEFAULT 'admin',                       -- 🎭 Rol (owner/manager/admin)
@@ -83,7 +99,8 @@ CREATE TABLE users (
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP                       -- 📅 Yaratilgan vaqt
 );
 
--- 🔑 Index for faster login queries
+-- 🔑 Branch-scoped unique username (har bir club ichida unique)
+CREATE UNIQUE INDEX idx_users_branch_username ON users(branch_id, username);
 CREATE INDEX idx_users_username ON users(username);
 
 -- ============================================
@@ -251,3 +268,54 @@ CREATE TABLE IF NOT EXISTS expenses (
 
 CREATE INDEX idx_expenses_branch ON expenses(branch_id);
 CREATE INDEX idx_expenses_created ON expenses(created_at);
+
+-- ============================================
+-- 📦 11. PLANS — Tarif rejalar (Super Admin boshqaradi)
+-- ============================================
+CREATE TABLE plans (
+    id              SERIAL PRIMARY KEY,
+    name            VARCHAR(50) NOT NULL,                    -- 🏷️ Plan nomi (Free, Pro, Enterprise)
+    max_rooms       INT NOT NULL DEFAULT 2,                  -- 🚩 Maksimal xonalar soni
+    max_products    INT NOT NULL DEFAULT 4,                  -- 🚩 Maksimal mahsulotlar soni
+    max_users       INT NOT NULL DEFAULT 2,                  -- 🚩 Maksimal foydalanuvchilar
+    price_monthly   DECIMAL(12,2) DEFAULT 0,                 -- 💰 Oylik narx (so'm)
+    is_active       BOOLEAN DEFAULT true,                    -- ✅ Faolmi
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP      -- 📅 Yaratilgan vaqt
+);
+
+-- 🏷️ Default tarif rejalar
+INSERT INTO plans (name, max_rooms, max_products, max_users, price_monthly) VALUES
+    ('Free', 2, 4, 2, 0),
+    ('Pro', 10, 20, 5, 99000),
+    ('Enterprise', 999, 999, 999, 249000);
+
+-- 🔗 Foreign key: branches.plan_id → plans.id
+ALTER TABLE branches ADD CONSTRAINT fk_branches_plan FOREIGN KEY (plan_id) REFERENCES plans(id);
+
+-- ============================================
+-- 🎟️ 12. PROMO_CODES — Promokodlar
+-- ============================================
+CREATE TABLE promo_codes (
+    id              SERIAL PRIMARY KEY,
+    code            VARCHAR(30) UNIQUE NOT NULL,             -- 🏷️ Kod (WELCOME50, VIPFREE)
+    discount_percent INT NOT NULL DEFAULT 0,                 -- 💸 Chegirma foizi (0-100)
+    valid_until     TIMESTAMP,                               -- 📅 Amal qilish muddati
+    max_uses        INT DEFAULT 100,                         -- 🚩 Maksimal ishlatishlar
+    used_count      INT DEFAULT 0,                           -- 📊 Ishlatilganlar soni
+    is_active       BOOLEAN DEFAULT true,                    -- ✅ Faolmi
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP      -- 📅 Yaratilgan vaqt
+);
+
+-- ============================================
+-- 🤖 13. TELEGRAM_USERS — TG ↔ Game Club bog'lanishi
+-- ============================================
+CREATE TABLE telegram_users (
+    id          SERIAL PRIMARY KEY,
+    telegram_id BIGINT UNIQUE NOT NULL,                      -- 🤖 Telegram user ID
+    phone       VARCHAR(20),                                 -- 📞 Telefon raqam
+    branch_id   INT REFERENCES branches(id),                 -- 🏢 Bog'langan club
+    user_id     INT REFERENCES users(id),                    -- 👤 Bog'langan user
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP          -- 📅 Yaratilgan vaqt
+);
+
+CREATE INDEX idx_telegram_users_tgid ON telegram_users(telegram_id);

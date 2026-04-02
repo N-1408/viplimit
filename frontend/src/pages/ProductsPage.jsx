@@ -140,17 +140,17 @@ function ProductsPage() {
                         <tbody>
                             {products.map(p => (
                                 <tr key={p.id} className={p.is_out_of_stock ? 'out-of-stock' : p.is_low_stock ? 'low-stock' : ''}>
-                                    <td><strong>{p.name}</strong></td>
-                                    <td>{p.category}</td>
-                                    <td>{formatCurrency(p.cost_price)}</td>
-                                    <td>{formatCurrency(p.sell_price)}</td>
-                                    <td><strong style={{ color: p.is_out_of_stock ? 'var(--accent-danger)' : p.is_low_stock ? 'var(--accent-warning)' : 'var(--text-primary)' }}>{p.quantity}</strong></td>
-                                    <td>
+                                    <td data-label="Nomi"><strong>{p.name}</strong></td>
+                                    <td data-label="Kategoriya">{p.category}</td>
+                                    <td data-label="Olib kelish">{formatCurrency(p.cost_price)}</td>
+                                    <td data-label="Sotish">{formatCurrency(p.sell_price)}</td>
+                                    <td data-label="Qoldiq"><strong style={{ color: p.is_out_of_stock ? 'var(--accent-danger)' : p.is_low_stock ? 'var(--accent-warning)' : 'var(--text-primary)' }}>{p.quantity}</strong></td>
+                                    <td data-label="Holat">
                                         {p.is_out_of_stock ? <span className="badge busy"><XCircle size={12} /> Tugadi</span>
                                             : p.is_low_stock ? <span className="badge vip"><AlertTriangle size={12} /> Kam</span>
                                                 : <span className="badge free"><Check size={12} /> Bor</span>}
                                     </td>
-                                    <td>
+                                    <td data-label="Amallar">
                                         <div className="flex gap-8">
                                             {hasRole('manager', 'owner') && (<>
                                                 <button className="btn btn-ghost btn-icon" title="Tahrirlash" onClick={() => openEdit(p)}><Pencil size={14} /></button>

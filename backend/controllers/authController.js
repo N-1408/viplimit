@@ -162,7 +162,11 @@ const updateCredentials = async (req, res) => {
         let idx = 1;
 
         if (newUsername && newUsername !== user.username) {
-            const existing = await query('SELECT id FROM users WHERE username = $1', [newUsername]);
+            // 🔍 Branch-scoped unique check
+            const existing = await query(
+                'SELECT id FROM users WHERE branch_id = $1 AND username = $2',
+                [user.branch_id, newUsername]
+            );
             if (existing.rows.length > 0) return res.status(400).json({ error: "Bu username band." });
 
             updates.push(`username = $${idx++}`);
@@ -188,4 +192,159 @@ const updateCredentials = async (req, res) => {
     }
 };
 
-module.exports = { login, getMe, setupOwner, updateCredentials };
+// ============================================
+// 🆕 POST /api/auth/register — Yangi Game Club yaratish
+// ============================================
+const register = async (req, res) => {
+    try {
+        const { club_name, username, password, full_name, telegram_id } = req.body;
+
+        // ✅ Validate
+        if (!club_name || !username || !password || !full_name) {
+            return res.status(400).json({ error: "Club nomi, username, password va ism kiritilishi shart." });
+        }
+
+        // 🏢 Yangi branch (game club) yaratish
+        const branchResult = await query(
+            `INSERT INTO branches (name, plan_id) VALUES ($1, 1) RETURNING id`,
+            [club_name]
+        );
+        const branchId = branchResult.rows[0].id;
+
+        // 🔒 Hash password
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(password, salt);
+
+        // 👤 Owner user yaratish
+        const userResult = await query(
+            `INSERT INTO users (branch_id, username, password_hash, full_name, role)
+             VALUES ($1, $2, $3, $4, 'owner') RETURNING id, username, full_name, role, branch_id`,
+            [branchId, username, password_hash, full_name]
+        );
+        const user = userResult.rows[0];
+
+        // 🤖 Telegram bog'lanishi (agar telegram_id mavjud bo'lsa)
+        if (telegram_id) {
+            await query(
+                `INSERT INTO telegram_users (telegram_id, branch_id, user_id)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (telegram_id) DO UPDATE SET branch_id = $2, user_id = $3`,
+                [telegram_id, branchId, user.id]
+            );
+        }
+
+        // 🎫 JWT Token yaratish
+        const token = jwt.sign(
+            {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+                branch_id: user.branch_id,
+                full_name: user.full_name,
+                telegram_id: telegram_id || null
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+
+        res.status(201).json({
+            message: '✅ Game Club muvaffaqiyatli yaratildi!',
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                full_name: user.full_name,
+                role: user.role,
+                branch_id: user.branch_id
+            }
+        });
+    } catch (err) {
+        console.error('❌ Register error:', err.message);
+        if (err.code === '23505') {
+            return res.status(400).json({ error: 'Bu username allaqachon band.' });
+        }
+        res.status(500).json({ error: 'Server xatosi.' });
+    }
+};
+
+// ============================================
+// 🤖 POST /api/auth/tg-auto-login — Telegram ID orqali avtomatik kirish
+// ============================================
+const tgAutoLogin = async (req, res) => {
+    try {
+        const { telegram_id } = req.body;
+
+        if (!telegram_id) {
+            return res.status(400).json({ error: 'Telegram ID kiritilishi shart.' });
+        }
+
+        // 🔍 Telegram userni topish
+        const tgResult = await query(
+            'SELECT * FROM telegram_users WHERE telegram_id = $1',
+            [telegram_id]
+        );
+
+        if (tgResult.rows.length === 0 || !tgResult.rows[0].user_id) {
+            return res.json({ registered: false });
+        }
+
+        const tgUser = tgResult.rows[0];
+
+        // 👤 User ma'lumotlarini olish
+        const userResult = await query(
+            'SELECT id, username, full_name, role, branch_id FROM users WHERE id = $1 AND is_active = true',
+            [tgUser.user_id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.json({ registered: false });
+        }
+
+        const user = userResult.rows[0];
+
+        // 🏢 Branch faolligini tekshirish
+        const branchResult = await query(
+            'SELECT is_enabled FROM branches WHERE id = $1',
+            [user.branch_id]
+        );
+
+        if (branchResult.rows.length === 0 || !branchResult.rows[0].is_enabled) {
+            return res.status(403).json({ error: '🚫 Sizning Game Club vaqtincha to\'xtatilgan.' });
+        }
+
+        // 🔒 Check if this user is Super Admin
+        const isSuperAdmin = String(telegram_id) === String(process.env.SUPER_ADMIN_TG_ID);
+
+        // 🎫 JWT Token
+        const token = jwt.sign(
+            {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+                branch_id: user.branch_id,
+                full_name: user.full_name,
+                telegram_id: telegram_id
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+
+        res.json({
+            registered: true,
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                full_name: user.full_name,
+                role: user.role,
+                branch_id: user.branch_id
+            },
+            is_super_admin: isSuperAdmin
+        });
+    } catch (err) {
+        console.error('❌ TG auto-login error:', err.message);
+        res.status(500).json({ error: 'Server xatosi.' });
+    }
+};
+
+module.exports = { login, getMe, setupOwner, updateCredentials, register, tgAutoLogin };

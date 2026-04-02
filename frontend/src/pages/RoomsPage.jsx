@@ -853,7 +853,12 @@ function RoomsPage() {
                                         <div className="form-group">
                                             <label className="form-label">Soat</label>
                                             <input type="number" className="form-input" min="0" max="24" autoFocus
-                                                value={sessionForm.hours} onChange={e => setSessionForm({ ...sessionForm, hours: parseInt(e.target.value) || 0 })} />
+                                                placeholder="0"
+                                                value={sessionForm.hours === 0 ? '' : sessionForm.hours}
+                                                onChange={e => {
+                                                    let val = e.target.value;
+                                                    setSessionForm({ ...sessionForm, hours: val === '' ? 0 : parseInt(val, 10) });
+                                                }} />
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label">Daqiqa</label>
@@ -918,19 +923,21 @@ function RoomsPage() {
                                 </div>
                             </div>
 
-                            <div className="grid-2">
+                            <div className={stopForm.discount_amount > 0 ? "grid-2" : ""}>
                                 <div className="form-group">
                                     <label className="form-label">Chegirma (so'm)</label>
                                     <input type="number" className="form-input" min="0" placeholder="0" autoFocus
-                                        value={stopForm.discount_amount === 0 ? '' : stopForm.discount_amount}
+                                        value={stopForm.discount_amount || ''}
                                         onChange={e => setStopForm({ ...stopForm, discount_amount: e.target.value === '' ? 0 : parseInt(e.target.value) })} />
                                 </div>
-                                <div className="form-group">
-                                    <label className="form-label">Sababi</label>
-                                    <input type="text" className="form-input" placeholder="Ixtiyoriy"
-                                        value={stopForm.discount_reason}
-                                        onChange={e => setStopForm({ ...stopForm, discount_reason: e.target.value })} />
-                                </div>
+                                {stopForm.discount_amount > 0 && (
+                                    <div className="form-group animate-fade-in">
+                                        <label className="form-label">Chegirma sababi</label>
+                                        <input type="text" className="form-input" placeholder="Ixtiyoriy"
+                                            value={stopForm.discount_reason}
+                                            onChange={e => setStopForm({ ...stopForm, discount_reason: e.target.value })} />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="modal-actions">
@@ -954,7 +961,7 @@ function RoomsPage() {
                             <button className="modal-close" onClick={() => setShowBillModal(false)}><X size={16} /></button>
                         </div>
 
-                        <div className="bill-receipt">
+                        <div className="bill-receipt" style={{ margin: '16px -20px 0 -20px', borderLeft: 'none', borderRight: 'none', borderRadius: 0 }}>
                             <div className="bill-receipt-header">
                                 <h3>{billData.room_name}</h3>
                                 <p>{billData.console_type} · {billData.mode}</p>

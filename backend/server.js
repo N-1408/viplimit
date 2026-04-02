@@ -7,8 +7,8 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
-// 2026-03-24 16:13 (Tashkent) — 🛡️ #10: Sanitize middleware qo'shildi (XSS himoya).
-//    Helmet.js (HTTP xavfsizlik headers) va Morgan (HTTP logging) qo'shildi.
+// 2026-04-03 01:28 (Tashkent) — 🤖 TG Bot, Super Admin routes, SPA static serving
+// 2026-03-24 16:13 (Tashkent) — 🛡️ Sanitize + Helmet + Morgan qo'shildi
 // ============================================
 
 // 🔧 Load environment variables FIRST
@@ -22,6 +22,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { pool } = require('./config/database');
 const { sanitizeBody } = require('./middleware/sanitize');
+const { startBot } = require('./bot');
+const path = require('path');
 
 // 📦 Create Express app and HTTP server
 const app = express();
@@ -91,6 +93,9 @@ app.use('/api/settings', require('./routes/settingsRoutes'));
 // 💸 Expenses routes
 app.use('/api/expenses', require('./routes/expenseRoutes'));
 
+// 🔒 Super Admin routes (TG ID protected)
+app.use('/api/super', require('./routes/superAdminRoutes'));
+
 // ============================================
 // 🏠 HEALTH CHECK
 // ============================================
@@ -142,10 +147,27 @@ io.on('connection', (socket) => {
 });
 
 // ============================================
+// 📦 STATIC SPA SERVING (Production)
+// ============================================
+
+// 🌐 Serve frontend static files in production
+const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');
+app.use(express.static(frontendPath));
+
+// 🔄 SPA fallback — har qanday noma'lum route uchun index.html qaytarish
+app.get('*', (req, res, next) => {
+    // API requestlarni o'tkazib yuborish
+    if (req.path.startsWith('/api/') || req.path.startsWith('/socket.io/')) {
+        return next();
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// ============================================
 // ❌ ERROR HANDLING
 // ============================================
 
-// 🚫 404 handler
+// 🚫 404 handler (faqat API uchun)
 app.use((req, res) => {
     res.status(404).json({ error: '❌ Endpoint topilmadi.' });
 });
@@ -169,6 +191,13 @@ server.listen(PORT, () => {
     console.log(`📅 Started at: ${new Date().toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' })}`);
     console.log('🎮 ============================================');
     console.log('');
+
+    // 🤖 Start Telegram bot (if BOT_TOKEN is set)
+    const botToken = process.env.BOT_TOKEN;
+    const webAppUrl = process.env.WEBAPP_URL || `http://localhost:${PORT}`;
+    if (botToken) {
+        startBot(botToken, webAppUrl);
+    }
 });
 
 // 🔄 Graceful shutdown

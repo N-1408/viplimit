@@ -6,20 +6,26 @@
 //    client-side routing.
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
+// 📋 CHANGE LOG:
+// 2026-04-03 01:28 (Tashkent) — 🤖 TelegramProvider qo'shildi
+// ============================================
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import { TelegramProvider } from './context/TelegramContext';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <BrowserRouter>
-            <AuthProvider>
-                <App />
-            </AuthProvider>
+            <TelegramProvider>
+                <AuthProvider>
+                    <App />
+                </AuthProvider>
+            </TelegramProvider>
         </BrowserRouter>
     </React.StrictMode>
 );

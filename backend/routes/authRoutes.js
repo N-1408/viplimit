@@ -7,14 +7,14 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
-// 2026-03-24 16:13 (Tashkent) — 🛡️ Rate limiting qo'shildi: login (10/15min),
-//    setup (5/15min). Brute force hujumiga qarshi himoya. (#2 fix)
+// 2026-04-03 01:28 (Tashkent) — 🤖 register va tg-auto-login endpointlari qo'shildi
+// 2026-03-24 16:13 (Tashkent) — 🛡️ Rate limiting qo'shildi (#2 fix)
 // ============================================
 
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { login, getMe, setupOwner, updateCredentials } = require('../controllers/authController');
+const { login, getMe, setupOwner, updateCredentials, register, tgAutoLogin } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 
 // 🛡️ Rate limiter for login — max 10 attempts per 15 minutes
@@ -44,7 +44,13 @@ router.post('/setup', setupLimiter, setupOwner);
 // 👤 GET /api/auth/me — Get current user (requires auth)
 router.get('/me', authenticateToken, getMe);
 
-// ✏️ PUT /api/auth/update-credentials — Update login and password
+// ✅ PUT /api/auth/update-credentials — Update login and password
 router.put('/update-credentials', authenticateToken, updateCredentials);
+
+// 🆕 POST /api/auth/register — Yangi Game Club yaratish (public)
+router.post('/register', setupLimiter, register);
+
+// 🤖 POST /api/auth/tg-auto-login — Telegram auto-login (public)
+router.post('/tg-auto-login', tgAutoLogin);
 
 module.exports = router;

@@ -252,59 +252,61 @@ function ExpensesPage() {
                         <p className="text-muted" style={{ fontSize: '0.9rem', marginTop: 6 }}>Yangi xarajat qo'shish uchun "Xarajat Qo'shish" tugmasini bosing</p>
                     </div>
                 ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-glass)' }}>
-                                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sana</th>
-                                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Kategoriya</th>
-                                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Izoh</th>
-                                <th style={{ padding: '14px 20px', textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Summa</th>
-                                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Qo'shgan</th>
-                                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {expenses.map((exp, idx) => {
-                                const d = new Date(exp.created_at);
-                                const dateStr = formatDateUz(exp.created_at);
-                                const timeStr = formatTimeUz(exp.created_at);
-                                const catColor = categoryColors[exp.category] || '#6b7280';
-                                return (
-                                    <tr key={exp.id} style={{ borderBottom: idx === expenses.length - 1 ? 'none' : '1px solid var(--border-subtle)', transition: 'background 0.2s' }}
-                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <td style={{ padding: '14px 20px' }}>
-                                            <div style={{ fontSize: '0.95rem', color: '#fff' }}>{dateStr}</div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{timeStr}</div>
-                                        </td>
-                                        <td style={{ padding: '14px 20px' }}>
-                                            <span style={{ background: `${catColor}20`, color: catColor, border: `1px solid ${catColor}40`, borderRadius: 'var(--radius-sm)', padding: '4px 10px', fontSize: '0.85rem', fontWeight: 600 }}>
-                                                {exp.category}
-                                            </span>
-                                        </td>
-                                        <td style={{ padding: '14px 20px', color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: '300px' }}>
-                                            {exp.description || <span className="text-muted" style={{ fontStyle: 'italic' }}>—</span>}
-                                        </td>
-                                        <td style={{ padding: '14px 20px', textAlign: 'right', fontWeight: 700, fontSize: '1.05rem', color: exp.currency === 'USD' ? '#10b981' : '#ffa500' }}>
-                                            {formatAmount(exp.amount, exp.currency)}
-                                        </td>
-                                        <td style={{ padding: '14px 20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                            {exp.added_by || '—'}
-                                        </td>
-                                        <td style={{ padding: '14px 10px', textAlign: 'center' }}>
-                                            <button onClick={() => setShowDeleteConfirm(exp)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '6px', borderRadius: 'var(--radius-sm)', transition: 'all 0.2s' }}
-                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = 'var(--accent-danger)'; }}
-                                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                    <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--border-glass)' }}>
+                                    <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sana</th>
+                                    <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Kategoriya</th>
+                                    <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Izoh</th>
+                                    <th style={{ padding: '14px 20px', textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Summa</th>
+                                    <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Qo'shgan</th>
+                                    <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {expenses.map((exp, idx) => {
+                                    const d = new Date(exp.created_at);
+                                    const dateStr = formatDateUz(exp.created_at);
+                                    const timeStr = formatTimeUz(exp.created_at);
+                                    const catColor = categoryColors[exp.category] || '#6b7280';
+                                    return (
+                                        <tr key={exp.id}
+                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <td data-label="Sana">
+                                                <div style={{ fontSize: '0.95rem', color: '#fff' }}>{dateStr}</div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{timeStr}</div>
+                                            </td>
+                                            <td data-label="Kategoriya">
+                                                <span style={{ background: `${catColor}20`, color: catColor, border: `1px solid ${catColor}40`, borderRadius: 'var(--radius-sm)', padding: '4px 10px', fontSize: '0.85rem', fontWeight: 600 }}>
+                                                    {exp.category}
+                                                </span>
+                                            </td>
+                                            <td data-label="Izoh" style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: '300px' }}>
+                                                {exp.description || <span className="text-muted" style={{ fontStyle: 'italic' }}>—</span>}
+                                            </td>
+                                            <td data-label="Summa" style={{ textAlign: 'right', fontWeight: 700, fontSize: '1.05rem', color: exp.currency === 'USD' ? '#10b981' : '#ffa500' }}>
+                                                {formatAmount(exp.amount, exp.currency)}
+                                            </td>
+                                            <td data-label="Qo'shgan" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                                {exp.added_by || '—'}
+                                            </td>
+                                            <td data-label="Amallar">
+                                                <button onClick={() => setShowDeleteConfirm(exp)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '6px', borderRadius: 'var(--radius-sm)', transition: 'all 0.2s' }}
+                                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = 'var(--accent-danger)'; }}
+                                                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
 

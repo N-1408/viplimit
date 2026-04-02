@@ -180,9 +180,9 @@ function ReportsPage() {
                             <tbody>
                                 {(data?.rooms || data?.room_profitability || []).map((r, i) => (
                                     <tr key={i}>
-                                        <td><strong>{r.room_name}</strong><br /><small className="text-muted">{r.console_type}</small></td>
-                                        <td>{r.sessions_count || r.total_sessions}</td>
-                                        <td className="text-right"><strong className="text-primary">{formatCurrency(r.room_revenue || r.total_revenue)}</strong></td>
+                                        <td data-label="Xona"><strong>{r.room_name}</strong><br /><small className="text-muted">{r.console_type}</small></td>
+                                        <td data-label="Sessiyalar">{r.sessions_count || r.total_sessions}</td>
+                                        <td data-label="Daromad" className="text-right"><strong className="text-primary">{formatCurrency(r.room_revenue || r.total_revenue)}</strong></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -203,9 +203,9 @@ function ReportsPage() {
                                 {data?.top_products?.length > 0 ? (
                                     data.top_products.map((p, i) => (
                                         <tr key={i}>
-                                            <td><strong>{p.name}</strong><br /><small className="text-muted">{p.category}</small></td>
-                                            <td>{p.total_sold} ta</td>
-                                            <td className="text-right"><strong className="text-success">{formatCurrency(p.total_sales)}</strong></td>
+                                            <td data-label="Nomi"><strong>{p.name}</strong><br /><small className="text-muted">{p.category}</small></td>
+                                            <td data-label="Sotildi">{p.total_sold} ta</td>
+                                            <td data-label="Daromad" className="text-right"><strong className="text-success">{formatCurrency(p.total_sales)}</strong></td>
                                         </tr>
                                     ))
                                 ) : (

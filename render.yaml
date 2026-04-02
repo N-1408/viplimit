@@ -1,0 +1,30 @@
+# ============================================
+# 📁 File: render.yaml — Render.com Deployment Configuration
+# 👤 Author: User with AI
+# 📝 Description: Render deployment config for VipLimit web service.
+#    Builds frontend with Vite, serves via Express backend.
+#    All secrets managed via Render Environment Variables.
+# 📅 Created: 2026-04-03 01:28 (Tashkent Time)
+# ============================================
+
+services:
+  - type: web
+    name: viplimit
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: BOT_TOKEN
+        sync: false
+      - key: SUPER_ADMIN_TG_ID
+        sync: false
+      - key: WEBAPP_URL
+        sync: false
+      - key: NODE_ENV
+        value: production

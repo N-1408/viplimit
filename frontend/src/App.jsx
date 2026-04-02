@@ -6,9 +6,13 @@
 //    Redirects unauthenticated users to login page.
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
+// 📋 CHANGE LOG:
+// 2026-04-03 01:28 (Tashkent) — 🤖 TelegramProvider, SuperAdminPage route qo'shildi
+// ============================================
 
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { useTelegram } from './context/TelegramContext';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
 import RoomsPage from './pages/RoomsPage';
@@ -16,6 +20,7 @@ import ProductsPage from './pages/ProductsPage';
 import ExpensesPage from './pages/ExpensesPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import SuperAdminPage from './pages/SuperAdminPage';
 
 // 🔒 Protected Route wrapper — requires authentication
 function ProtectedRoute({ children, roles }) {
@@ -57,6 +62,7 @@ function AppLayout({ children }) {
 
 function App() {
     const { user } = useAuth();
+    const { isSuperAdmin } = useTelegram();
 
     return (
         <Routes>
@@ -99,6 +105,15 @@ function App() {
                     <AppLayout><SettingsPage /></AppLayout>
                 </ProtectedRoute>
             } />
+
+            {/* 🔒 Super Admin (hidden, TG ID protected) */}
+            {isSuperAdmin && (
+                <Route path="/super-admin" element={
+                    <ProtectedRoute>
+                        <AppLayout><SuperAdminPage /></AppLayout>
+                    </ProtectedRoute>
+                } />
+            )}
 
             {/* 🚫 Catch-all — redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
