@@ -7,8 +7,13 @@
 // 📅 Created: 2026-03-12 05:51 (Tashkent Time)
 // ============================================
 // 📋 CHANGE LOG:
+// 2026-04-03 03:02 (Tashkent) — 🐛 IPv4 majburlash (Supabase IPv6 ENETUNREACH fix)
 // 2026-04-03 01:28 (Tashkent) — 🤖 Supabase DATABASE_URL + SSL qo'shildi
 // ============================================
+
+const dns = require('dns');
+// 🌐 Force IPv4 — Render IPv6 orqali Supabase ga ulana olmaydi
+dns.setDefaultResultOrder('ipv4first');
 
 const { Pool } = require('pg');
 
