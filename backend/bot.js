@@ -85,21 +85,17 @@ async function startBot(token, webAppUrl) {
                 [String(telegramId), phone]
             );
 
-            // 🗑️ Oddiy klaviaturani olib tashlash
+            // ✅ Raqamingiz qabul qilindi va WebApp tugmasini doimiy klaviaturaga qo'shish
             await bot.sendMessage(chatId,
-                `✅ Raqamingiz qabul qilindi!`,
-                { reply_markup: { remove_keyboard: true } }
-            );
-
-            // ✅ Mini App button yuborish
-            await bot.sendMessage(chatId,
-                `🎮 Endi VipLimit ni ochishingiz mumkin:`,
+                `✅ Raqamingiz qabul qilindi!\n\n🎮 Endi VipLimit Admin panelini ochishingiz mumkin. Pastdagi tugmani bosing:`,
                 {
                     reply_markup: {
-                        inline_keyboard: [[{
-                            text: '🎮 VipLimit PRO ni ochish',
+                        keyboard: [[{
+                            text: '🎮 Admin panel (VipLimit PRO)',
                             web_app: { url: webAppUrl || 'https://viplimit.onrender.com' }
-                        }]]
+                        }]],
+                        resize_keyboard: true,
+                        is_persistent: true
                     }
                 }
             );

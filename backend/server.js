@@ -100,14 +100,23 @@ app.use('/api/super', require('./routes/superAdminRoutes'));
 // 🏠 HEALTH CHECK
 // ============================================
 
-// ✅ GET / — Server health check
-app.get('/', (req, res) => {
+// ✅ GET /api — Server base endpoint
+app.get('/api', (req, res) => {
     res.json({
         status: '✅ VipLimit API is running!',
         version: '1.0.0',
         timestamp: new Date().toISOString()
     });
 });
+
+// 🔄 Auto Ping (Render free tier uxlab qolmasligi uchun)
+setInterval(() => {
+    const url = process.env.WEBAPP_URL || `http://localhost:${process.env.PORT || 5000}`;
+    fetch(`${url}/api/health`)
+        .then(res => res.json())
+        .then(data => console.log('🔄 Render Keep-Alive ping successful'))
+        .catch(err => console.error('⚠️ Keep-Alive ping error:', err.message));
+}, 10 * 60 * 1000); // Har 10 daqiqada
 
 // ✅ GET /api/health — Detailed health check
 app.get('/api/health', async (req, res) => {
