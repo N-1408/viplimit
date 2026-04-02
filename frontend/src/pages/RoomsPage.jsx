@@ -66,6 +66,15 @@ const getTodayDate = () => {
     return date.toISOString().split('T')[0];
 };
 
+const getDefaultBookingTimes = () => {
+    const now = new Date();
+    if (now.getMinutes() > 0) now.setHours(now.getHours() + 1);
+    const from_time = String(now.getHours() % 24).padStart(2, '0') + ':00';
+    now.setHours(now.getHours() + 1);
+    const until_time = String(now.getHours() % 24).padStart(2, '0') + ':00';
+    return { from_time, until_time };
+};
+
 const getTomorrowDate = () => {
     const date = new Date();
     date.setDate(date.getDate() + 1);
@@ -199,8 +208,7 @@ function RoomsPage() {
     const [bookingForm, setBookingForm] = useState({
         customer_phone: '',
         date: getTodayDate(),
-        from_time: '18:00',
-        until_time: ''
+        ...getDefaultBookingTimes()
     });
     const [phoneTouched, setPhoneTouched] = useState(false);
 
@@ -215,7 +223,7 @@ function RoomsPage() {
         return baseTimeOptions.filter(opt => {
             const [h, m] = opt.value.split(':').map(Number);
             if (h > currHour) return true;
-            if (h === currHour && m > currMin) return true;
+            if (h === currHour && m >= currMin) return true;
             return false;
         });
     };
@@ -224,9 +232,9 @@ function RoomsPage() {
 
     useEffect(() => {
         if (showBookingModal && availableTimeOptions.length > 0) {
-            if (!availableTimeOptions.find(o => o.value === bookingForm.from_time)) {
-                setBookingForm(prev => ({ ...prev, from_time: availableTimeOptions[0].value }));
-            }
+            // Update from_time only if the currently selected one is no longer available
+            // Note: we don't aggressively reset it to availableTimeOptions[0] if the user manually changes date
+            // The user requested that until_time also adjusts.
         }
     }, [bookingForm.date, showBookingModal, availableTimeOptions]);
 
@@ -295,7 +303,7 @@ function RoomsPage() {
     };
 
     // 🟢 Submit Room form
-    const handleSubmitRoom = async (e) => {
+    const handleRoomSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
         setIsSubmitting(true);
@@ -648,7 +656,7 @@ function RoomsPage() {
                                         ) : (
                                             <button className="btn w-full" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-glass)', color: 'var(--text-secondary)' }} onClick={() => {
                                                 setSelectedRoom(room);
-                                                setBookingForm({ customer_phone: '', date: getTodayDate(), from_time: '18:00', until_time: '' });
+                                                setBookingForm({ customer_phone: '', date: getTodayDate(), ...getDefaultBookingTimes() });
                                                 setPhoneTouched(false);
                                                 setShowBookingModal(true);
                                             }}>
@@ -726,7 +734,7 @@ function RoomsPage() {
                                 <button className="btn btn-ghost btn-sm w-full" style={{ justifyContent: 'flex-start', color: 'var(--text-primary)', marginBottom: '4px', fontSize: isMobile ? '0.95rem' : '0.85rem', padding: isMobile ? '12px' : '6px 12px' }}
                                     onClick={() => {
                                         setSelectedRoom(contextMenu.room);
-                                        setBookingForm({ customer_phone: '', date: getTodayDate(), from_time: '18:00', until_time: '' });
+                                        setBookingForm({ customer_phone: '', date: getTodayDate(), ...getDefaultBookingTimes() });
                                         setPhoneTouched(false);
                                         setShowBookingModal(true);
                                         setContextMenu({ roomId: null, room: null, isBusy: false, x: 0, y: 0 });

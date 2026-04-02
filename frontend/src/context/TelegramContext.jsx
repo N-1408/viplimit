@@ -21,12 +21,15 @@ export function TelegramProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 🤖 Initialize Telegram WebApp
         const telegram = window.Telegram?.WebApp;
 
         if (telegram) {
             telegram.ready();
             telegram.expand(); // 📱 Full screen mode
+
+            if (telegram.disableVerticalSwipes) {
+                telegram.disableVerticalSwipes(); // 🚫 Prevents the whole app from bouncing/scrolling when swiping Modals
+            }
 
             // 🎨 Theme adaptation
             telegram.setHeaderColor('#0a0a0f');

@@ -85,7 +85,10 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
     try {
         const result = await query(
-            'SELECT id, username, full_name, role, branch_id, is_active, created_at FROM users WHERE id = $1',
+            `SELECT u.id, u.username, u.full_name, u.role, u.branch_id, u.is_active, u.created_at, b.name as branch_name 
+             FROM users u 
+             LEFT JOIN branches b ON u.branch_id = b.id
+             WHERE u.id = $1`,
             [req.user.id]
         );
 

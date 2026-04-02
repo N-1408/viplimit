@@ -42,7 +42,7 @@ function ProductsPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // product object to delete
     const [editProduct, setEditProduct] = useState(null);
     const [restockProduct, setRestockProductState] = useState(null);
-    const [restockQty, setRestockQty] = useState(1);
+    const [restockQty, setRestockQty] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [form, setForm] = useState({

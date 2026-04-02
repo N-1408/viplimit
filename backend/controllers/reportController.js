@@ -28,7 +28,7 @@ const getDailyReport = async (req, res) => {
                 COUNT(CASE WHEN payment_method = 'card' THEN 1 END) as card_payments,
                 COUNT(CASE WHEN payment_method = 'transfer' THEN 1 END) as transfer_payments
              FROM sessions
-             WHERE DATE(start_time) = $1 AND status = 'completed'
+             WHERE DATE(start_time AT TIME ZONE 'Asia/Tashkent') = $1 AND status = 'completed'
                AND room_id IN (SELECT id FROM rooms WHERE branch_id = $2)`,
             [reportDate, req.user.branch_id]
         );
@@ -41,7 +41,7 @@ const getDailyReport = async (req, res) => {
                     COALESCE(AVG(EXTRACT(EPOCH FROM (s.end_time - s.start_time))/60), 0) as avg_duration_min
              FROM rooms r
              LEFT JOIN sessions s ON r.id = s.room_id 
-                AND DATE(s.start_time) = $1 AND s.status = 'completed'
+                AND DATE(s.start_time AT TIME ZONE 'Asia/Tashkent') = $1 AND s.status = 'completed'
              WHERE r.branch_id = $2 AND r.is_active = true
              GROUP BY r.id, r.name, r.console_type
              ORDER BY room_revenue DESC`,
@@ -56,7 +56,7 @@ const getDailyReport = async (req, res) => {
              FROM session_products sp
              JOIN products p ON sp.product_id = p.id
              JOIN sessions s ON sp.session_id = s.id
-             WHERE DATE(s.start_time) = $1 AND s.status = 'completed'
+             WHERE DATE(s.start_time AT TIME ZONE 'Asia/Tashkent') = $1 AND s.status = 'completed'
                AND p.branch_id = $2
              GROUP BY p.id, p.name, p.category
              ORDER BY total_sales DESC
@@ -87,16 +87,16 @@ const getRangeReport = async (req, res) => {
 
         // 📈 Daily revenue trend
         const trendResult = await query(
-            `SELECT DATE(start_time) as date,
+            `SELECT DATE(start_time AT TIME ZONE 'Asia/Tashkent') as date,
                     COUNT(*) as sessions,
                     COALESCE(SUM(total_amount), 0) as revenue,
                     COALESCE(SUM(time_amount), 0) as time_revenue,
                     COALESCE(SUM(products_amount), 0) as products_revenue
              FROM sessions
-             WHERE DATE(start_time) BETWEEN $1 AND $2 
+             WHERE DATE(start_time AT TIME ZONE 'Asia/Tashkent') BETWEEN $1 AND $2 
                AND status = 'completed'
                AND room_id IN (SELECT id FROM rooms WHERE branch_id = $3)
-             GROUP BY DATE(start_time)
+             GROUP BY DATE(start_time AT TIME ZONE 'Asia/Tashkent')
              ORDER BY date ASC`,
             [start_date, end_date, req.user.branch_id]
         );
@@ -109,7 +109,7 @@ const getRangeReport = async (req, res) => {
                     COALESCE(AVG(s.total_amount), 0) as avg_per_session
              FROM rooms r
              LEFT JOIN sessions s ON r.id = s.room_id 
-                AND DATE(s.start_time) BETWEEN $1 AND $2 AND s.status = 'completed'
+                AND DATE(s.start_time AT TIME ZONE 'Asia/Tashkent') BETWEEN $1 AND $2 AND s.status = 'completed'
              WHERE r.branch_id = $3 AND r.is_active = true
              GROUP BY r.id, r.name, r.console_type
              ORDER BY total_revenue DESC`,
@@ -129,7 +129,7 @@ const getRangeReport = async (req, res) => {
                 COUNT(CASE WHEN payment_method = 'card' THEN 1 END) as card_payments,
                 COUNT(CASE WHEN payment_method = 'transfer' THEN 1 END) as transfer_payments
              FROM sessions
-             WHERE DATE(start_time) BETWEEN $1 AND $2 AND status = 'completed'
+             WHERE DATE(start_time AT TIME ZONE 'Asia/Tashkent') BETWEEN $1 AND $2 AND status = 'completed'
                AND room_id IN (SELECT id FROM rooms WHERE branch_id = $3)`,
             [start_date, end_date, req.user.branch_id]
         );
@@ -142,7 +142,7 @@ const getRangeReport = async (req, res) => {
              FROM session_products sp
              JOIN products p ON sp.product_id = p.id
              JOIN sessions s ON sp.session_id = s.id
-             WHERE DATE(s.start_time) BETWEEN $1 AND $2 AND s.status = 'completed'
+             WHERE DATE(s.start_time AT TIME ZONE 'Asia/Tashkent') BETWEEN $1 AND $2 AND s.status = 'completed'
                AND p.branch_id = $3
              GROUP BY p.id, p.name, p.category
              ORDER BY total_sales DESC
@@ -179,7 +179,7 @@ const getProductSalesReport = async (req, res) => {
              FROM products p
              LEFT JOIN session_products sp ON p.id = sp.product_id
                 AND sp.session_id IN (
-                    SELECT id FROM sessions WHERE DATE(start_time) BETWEEN $1 AND $2 AND status = 'completed'
+                    SELECT id FROM sessions WHERE DATE(start_time AT TIME ZONE 'Asia/Tashkent') BETWEEN $1 AND $2 AND status = 'completed'
                 )
              WHERE p.branch_id = $3 AND p.is_active = true
              GROUP BY p.id, p.name, p.category, p.sell_price, p.cost_price, p.quantity

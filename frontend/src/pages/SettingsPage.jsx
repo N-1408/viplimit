@@ -9,12 +9,28 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { KeyRound, CheckCircle2, Globe2, Palette, Send, CreditCard, Users, Smartphone, Shield, AlertCircle, Sparkles, Settings } from 'lucide-react';
+import { KeyRound, CheckCircle2, Globe2, Palette, Send, CreditCard, Users, Smartphone, Shield, AlertCircle, Sparkles, Settings, LogOut, Gamepad2 } from 'lucide-react';
 
 function SettingsPage() {
     const { user, hasRole, logout } = useAuth();
     const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: '' }
     const [isSaving, setIsSaving] = useState(false);
+    const [clubNameForm, setClubNameForm] = useState(user?.branch_name || '');
+    const [isSavingClub, setIsSavingClub] = useState(false);
+
+    const handleClubSubmit = async (e) => {
+        e.preventDefault();
+        setMessage(null);
+        try {
+            setIsSavingClub(true);
+            const res = await api.put('/settings/club-name', { club_name: clubNameForm });
+            setMessage({ type: 'success', text: res.data.message });
+        } catch (err) {
+            setMessage({ type: 'error', text: err.response?.data?.error || 'Xatolik yuz berdi' });
+        } finally {
+            setIsSavingClub(false);
+        }
+    };
 
     // --- Security Form ---
     const [securityForm, setSecurityForm] = useState({
@@ -103,6 +119,31 @@ function SettingsPage() {
                             </div>
                             <button className="btn btn-danger btn-sm" onClick={logout}>Chiqish</button>
                         </div>
+                    </div>
+
+                    {/* 🎮 Game Club Name Editing */}
+                    <div className="card mb-24">
+                        <div className="flex items-center gap-12 mb-24">
+                            <Gamepad2 size={24} className="text-muted" />
+                            <h3 className="font-bold" style={{ fontSize: '1.2rem' }}>Game Club Sozlamalari</h3>
+                        </div>
+                        <form onSubmit={handleClubSubmit}>
+                            <div className="form-group mb-16">
+                                <label className="form-label">Klub Nomi (Brand)</label>
+                                <input type="text" className="form-input" required
+                                    placeholder="Klub nomi"
+                                    value={clubNameForm} onChange={e => setClubNameForm(e.target.value)}
+                                />
+                            </div>
+                            <button type="submit" className="btn w-full" disabled={isSavingClub || !clubNameForm} style={{
+                                background: !clubNameForm ? 'var(--bg-elevated)' : 'rgba(255, 165, 0, 0.15)',
+                                color: !clubNameForm ? 'var(--text-muted)' : '#ffa500',
+                                border: `1px solid ${!clubNameForm ? 'var(--border-glass)' : 'rgba(255, 165, 0, 0.3)'}`,
+                                cursor: !clubNameForm ? 'not-allowed' : 'pointer'
+                            }}>
+                                {isSavingClub ? 'Saqlanmoqda...' : 'Nomini O\'zgartirish'}
+                            </button>
+                        </form>
                     </div>
 
                     <div className="card">

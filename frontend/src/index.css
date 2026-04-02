@@ -235,7 +235,7 @@ a:hover {
 .app-main {
     flex: 1;
     /* No margin-left needed — flexbox handles it */
-    padding: 28px 32px;
+    padding: calc(28px + var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)))) 32px 28px 32px;
     min-height: 100vh;
     overflow-x: hidden;
 }
@@ -436,6 +436,9 @@ a:hover {
     box-shadow: var(--shadow-sm);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
+    /* Bug 8: Prevent text selection on long press */
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .room-card::before {

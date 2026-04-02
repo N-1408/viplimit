@@ -36,5 +36,22 @@ const updateConsoles = async (req, res) => {
         res.status(500).json({ error: 'Server xatosi.' });
     }
 };
+// 🏢 PUT /api/settings/club-name
+const updateClubName = async (req, res) => {
+    try {
+        if (req.user.role !== 'owner' && req.user.role !== 'manager') {
+            return res.status(403).json({ error: "Sizda bunday huquq yo'q." });
+        }
+        const { club_name } = req.body;
+        if (!club_name || club_name.trim() === '') {
+            return res.status(400).json({ error: "Club nomi bo'sh bo'lishi mumkin emas." });
+        }
+        await query('UPDATE branches SET name = $1 WHERE id = $2', [club_name, req.user.branch_id]);
+        res.json({ message: "Game Club nomi muvaffaqiyatli o'zgartirildi!" });
+    } catch (err) {
+        console.error('Settings error:', err.message);
+        res.status(500).json({ error: 'Server xatosi.' });
+    }
+};
 
-module.exports = { getConsoles, updateConsoles };
+module.exports = { getConsoles, updateConsoles, updateClubName };
