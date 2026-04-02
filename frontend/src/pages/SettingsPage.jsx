@@ -68,7 +68,7 @@ function SettingsPage() {
 
             <div className="page-header">
                 <div>
-                    <h1 className="page-title"><Settings size={28} /> Klub nomi sozlamalari</h1>
+                    <h1 className="page-title" style={{ textTransform: 'capitalize' }}><Settings size={28} /> {user?.branch_name || 'VipLimit'} sozlamalari</h1>
                     <p className="page-subtitle">Parollarni yangilang va kelajakdagi imkoniyatlar bilan tanishing</p>
                 </div>
             </div>
@@ -89,19 +89,7 @@ function SettingsPage() {
                 {/* 🔒 Security & Login (Left Panel) */}
                 <div style={{ flex: '1 1 min(100%, 400px)', maxWidth: '450px' }}>
 
-                    {/* Minimalist Logout Card as requested */}
-                    {/* Minimalist Logout Card as requested */}
-                    <div className="card mb-24 flex-between" style={{ padding: '12px 16px', background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '16px' }}>
-                        <div className="flex items-center gap-12">
-                            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '8px', borderRadius: '12px' }}>
-                                <LogOut color="#ef4444" size={20} />
-                            </div>
-                            <h3 className="font-bold" style={{ fontSize: '1.1rem', color: '#ef4444' }}>Tizimdan chiqish</h3>
-                        </div>
-                        <button className="btn btn-sm" onClick={logout} style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 'bold' }}>Chiqish</button>
-                    </div>
-
-                    <div className="card">
+                    {/* Minimalist Logout Card as requested */}                    <div className="card">
                         <div className="flex items-center gap-12 mb-24">
                             <KeyRound size={24} className="text-muted" />
                             <h3 className="font-bold" style={{ fontSize: '1.2rem' }}>Xavfsizlik va Login</h3>
@@ -186,6 +174,17 @@ function SettingsPage() {
 
             </div>
 
+            {/* Logout Button at the bottom of the page */}
+            <div style={{ marginTop: '40px' }} className="animate-fade-in">
+                <button className="card flex-center w-full" onClick={logout} style={{
+                    padding: '16px', background: 'transparent',
+                    border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'pointer',
+                    transition: 'all 0.2s ease', gap: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <LogOut color="var(--accent-danger)" size={20} />
+                    <h3 className="font-bold" style={{ fontSize: '1.1rem', color: 'var(--accent-danger)', margin: 0 }}>Tizimdan chiqish</h3>
+                </button>
+            </div>
         </div>
     );
 }

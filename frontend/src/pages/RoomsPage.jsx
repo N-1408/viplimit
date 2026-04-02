@@ -540,7 +540,7 @@ function RoomsPage() {
                                 }
                             }}
                             onTouchStart={(e) => {
-                                if (hasRole('manager', 'owner')) {
+                                if (!reorderMode && hasRole('manager', 'owner')) {
                                     const touch = e.touches[0];
                                     longPressTimer.current = setTimeout(() => {
                                         setContextMenu({ roomId: room.id, room: room, isBusy: !!isBusy, x: touch.clientX, y: touch.clientY });

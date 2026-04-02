@@ -62,7 +62,8 @@ function AppLayout({ children }) {
 
 function App() {
     const { user } = useAuth();
-    const { isSuperAdmin } = useTelegram();
+    // Removed unused isSuperAdmin from useTelegram since AuthContext provides the backend-verified status
+    // const { isSuperAdmin } = useTelegram();
 
     return (
         <Routes>
@@ -106,8 +107,8 @@ function App() {
                 </ProtectedRoute>
             } />
 
-            {/* 🔒 Super Admin (hidden, TG ID protected) */}
-            {isSuperAdmin && (
+            {/* 🔒 Super Admin (hidden, DB protected) */}
+            {user?.isSuperAdmin && (
                 <Route path="/super-admin" element={
                     <ProtectedRoute>
                         <AppLayout><SuperAdminPage /></AppLayout>
