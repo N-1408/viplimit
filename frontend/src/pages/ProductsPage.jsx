@@ -235,8 +235,24 @@ function ProductsPage() {
                         </div>
                         <form onSubmit={handleRestock}>
                             <p className="text-muted mb-16">Hozirgi qoldiq: <strong>{restockProduct?.quantity}</strong></p>
-                            <div className="form-group"><label className="form-label">Qo'shilayotgan miqdor</label>
-                                <input type="number" className="form-input" min="1" required autoFocus onFocus={e => e.target.select()} value={restockQty} onChange={e => setRestockQty(e.target.value === '' ? '' : parseInt(e.target.value))} disabled={isSubmitting} /></div>
+                            <div className="form-group mb-24">
+                                <label className="form-label text-center" style={{ display: 'block' }}>Qo'shilayotgan miqdor</label>
+                                <div className="flex-center gap-12" style={{ margin: '0 auto', maxWidth: 200 }}>
+                                    <button type="button" className="btn" style={{ padding: '8px 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-glass)', borderRadius: '12px' }}
+                                        onClick={() => setRestockQty(q => Math.max(1, (q || 0) - 1))}>
+                                        -
+                                    </button>
+                                    <input type="number" className="form-input text-center" min="1" required autoFocus onFocus={e => e.target.select()}
+                                        style={{ width: '80px', fontSize: '1.2rem', padding: '8px' }}
+                                        value={restockQty}
+                                        onChange={e => setRestockQty(e.target.value === '' ? '' : parseInt(e.target.value))}
+                                        disabled={isSubmitting} />
+                                    <button type="button" className="btn" style={{ padding: '8px 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-glass)', borderRadius: '12px' }}
+                                        onClick={() => setRestockQty(q => (q || 0) + 1)}>
+                                        +
+                                    </button>
+                                </div>
+                            </div>
                             <div className="modal-actions">
                                 <button type="button" className="btn btn-ghost" onClick={() => setShowRestockModal(false)} disabled={isSubmitting}>Bekor qilish</button>
                                 <button type="submit" className="btn btn-success" disabled={isSubmitting}>

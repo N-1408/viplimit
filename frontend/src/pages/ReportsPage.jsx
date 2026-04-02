@@ -25,6 +25,19 @@ import {
     Monitor, ShoppingCart, Users, Banknote, CreditCard
 } from 'lucide-react';
 
+const getOffsetDateString = (offsetDays = 0) => {
+    const date = new Date();
+    date.setDate(date.getDate() + offsetDays);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+};
+
+const getOffsetExactDate = (year, month, day) => {
+    const date = new Date(year, month, day);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+};
+
 function ReportsPage() {
     const [filter, setFilter] = useState('today');
     const [data, setData] = useState(null);
@@ -34,7 +47,7 @@ function ReportsPage() {
         setLoading(true);
         try {
             let res;
-            const today = new Date().toLocaleDateString('en-CA');
+            const today = getOffsetDateString(0);
             let start;
 
             switch (currentFilter) {
@@ -42,24 +55,26 @@ function ReportsPage() {
                     res = await api.get(`/reports/daily?date=${today}`);
                     break;
                 case 'yesterday':
-                    const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toLocaleDateString('en-CA');
+                    const yesterday = getOffsetDateString(-1);
                     res = await api.get(`/reports/daily?date=${yesterday}`);
                     break;
                 case 'week':
-                    start = new Date(new Date().setDate(new Date().getDate() - 7)).toLocaleDateString('en-CA');
+                    start = getOffsetDateString(-7);
                     res = await api.get(`/reports/range?start_date=${start}&end_date=${today}`);
                     break;
                 case 'month':
-                    start = new Date(new Date().setDate(new Date().getDate() - 30)).toLocaleDateString('en-CA');
+                    start = getOffsetDateString(-30);
                     res = await api.get(`/reports/range?start_date=${start}&end_date=${today}`);
                     break;
                 case 'last_month':
-                    const firstDayPrev = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('en-CA');
-                    const lastDayPrev = new Date(new Date().getFullYear(), new Date().getMonth(), 0).toLocaleDateString('en-CA');
+                    const y = new Date().getFullYear();
+                    const m = new Date().getMonth();
+                    const firstDayPrev = getOffsetExactDate(y, m - 1, 1);
+                    const lastDayPrev = getOffsetExactDate(y, m, 0);
                     res = await api.get(`/reports/range?start_date=${firstDayPrev}&end_date=${lastDayPrev}`);
                     break;
                 case 'year':
-                    start = new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('en-CA');
+                    start = getOffsetExactDate(new Date().getFullYear(), 0, 1);
                     res = await api.get(`/reports/range?start_date=${start}&end_date=${today}`);
                     break;
                 default:

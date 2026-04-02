@@ -122,9 +122,13 @@ body {
     position: relative;
     /* Prevent bounce on iOS */
     overscroll-behavior-y: none;
-    /* Safe Area for Telegram WebApp Mobile Notch */
-    padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
-    padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+    /* Safe Area for Telegram WebApp Mobile Notch (iPhone X support) */
+    padding-top: max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 30px));
+    padding-bottom: max(var(--tg-safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 15px));
+}
+
+body:has(.modal-overlay) {
+    overflow: hidden !important;
 }
 
 /* Ambient Deep Lighting Background */

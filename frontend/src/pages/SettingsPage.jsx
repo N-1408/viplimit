@@ -15,23 +15,6 @@ function SettingsPage() {
     const { user, hasRole, logout } = useAuth();
     const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: '' }
     const [isSaving, setIsSaving] = useState(false);
-    const [clubNameForm, setClubNameForm] = useState(user?.branch_name || '');
-    const [isSavingClub, setIsSavingClub] = useState(false);
-
-    const handleClubSubmit = async (e) => {
-        e.preventDefault();
-        setMessage(null);
-        try {
-            setIsSavingClub(true);
-            const res = await api.put('/settings/club-name', { club_name: clubNameForm });
-            setMessage({ type: 'success', text: res.data.message });
-        } catch (err) {
-            setMessage({ type: 'error', text: err.response?.data?.error || 'Xatolik yuz berdi' });
-        } finally {
-            setIsSavingClub(false);
-        }
-    };
-
     // --- Security Form ---
     const [securityForm, setSecurityForm] = useState({
         currentPassword: '',
@@ -86,7 +69,7 @@ function SettingsPage() {
             <div className="page-header">
                 <div>
                     <h1 className="page-title"><Settings size={28} /> Sozlamalar</h1>
-                    <p className="page-subtitle">Parollarni yangilang va kelajakdagi imkoniyatlar bilan tanishing</p>
+                    <p className="page-subtitle">Klubingiz: <strong style={{ color: 'var(--text-primary)' }}>{user?.branch_name || 'Family Stay'}</strong> &bull; Parollarni yangilang</p>
                 </div>
             </div>
 
@@ -106,44 +89,17 @@ function SettingsPage() {
                 {/* 🔒 Security & Login (Left Panel) */}
                 <div style={{ flex: '1 1 min(100%, 400px)', maxWidth: '450px' }}>
 
-                    {/* Logout Card (Useful for Mobile where sidebar is hidden) */}
-                    <div className="card mb-24" style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
-                        <div className="flex items-center justify-between">
+                    {/* Minimalist Logout Card as requested */}
+                    <div className="card mb-24" style={{ padding: '16px', background: 'var(--bg-elevated)', borderColor: 'rgba(239, 68, 68, 0.15)' }}>
+                        <div className="flex items-center justify-between" style={{ width: '100%' }}>
                             <div className="flex items-center gap-12">
-                                <div style={{ background: 'var(--accent-danger-soft)', padding: '8px', borderRadius: 'var(--radius-md)' }}>
-                                    <LogOut color="var(--accent-danger)" size={20} />
+                                <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '10px', borderRadius: '10px' }}>
+                                    <LogOut color="var(--accent-danger)" size={18} />
                                 </div>
-                                <div>
-                                    <h3 className="font-bold" style={{ fontSize: '1.05rem', color: 'var(--accent-danger)' }}>Tizimdan chiqish</h3>
-                                </div>
+                                <h3 className="font-bold" style={{ fontSize: '1.05rem', color: 'var(--accent-danger)' }}>Tizimdan chiqish</h3>
                             </div>
-                            <button className="btn btn-danger btn-sm" onClick={logout}>Chiqish</button>
+                            <button className="btn btn-sm" onClick={logout} style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-danger)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 14px' }}>Chiqish</button>
                         </div>
-                    </div>
-
-                    {/* 🎮 Game Club Name Editing */}
-                    <div className="card mb-24">
-                        <div className="flex items-center gap-12 mb-24">
-                            <Gamepad2 size={24} className="text-muted" />
-                            <h3 className="font-bold" style={{ fontSize: '1.2rem' }}>Game Club Sozlamalari</h3>
-                        </div>
-                        <form onSubmit={handleClubSubmit}>
-                            <div className="form-group mb-16">
-                                <label className="form-label">Klub Nomi (Brand)</label>
-                                <input type="text" className="form-input" required
-                                    placeholder="Klub nomi"
-                                    value={clubNameForm} onChange={e => setClubNameForm(e.target.value)}
-                                />
-                            </div>
-                            <button type="submit" className="btn w-full" disabled={isSavingClub || !clubNameForm} style={{
-                                background: !clubNameForm ? 'var(--bg-elevated)' : 'rgba(255, 165, 0, 0.15)',
-                                color: !clubNameForm ? 'var(--text-muted)' : '#ffa500',
-                                border: `1px solid ${!clubNameForm ? 'var(--border-glass)' : 'rgba(255, 165, 0, 0.3)'}`,
-                                cursor: !clubNameForm ? 'not-allowed' : 'pointer'
-                            }}>
-                                {isSavingClub ? 'Saqlanmoqda...' : 'Nomini O\'zgartirish'}
-                            </button>
-                        </form>
                     </div>
 
                     <div className="card">
