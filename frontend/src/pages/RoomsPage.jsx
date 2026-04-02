@@ -180,7 +180,7 @@ function RoomsPage() {
         };
     }, [reorderMode, savingOrder]);
 
-    // �📝 Form state
+    // 📝 Form state
     const [editRoom, setEditRoom] = useState(null);
     // const [selectedRoom, setSelectedRoom] = useState(null); // Moved to modal states
     const [billData, setBillData] = useState(null);
@@ -294,9 +294,11 @@ function RoomsPage() {
         return { text: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`, expired: false };
     };
 
-    // ➕ Create or ✏️ Update room
-    const handleRoomSubmit = async (e) => {
+    // 🟢 Submit Room form
+    const handleSubmitRoom = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             const payload = { ...roomForm, vip_hourly_rate: roomForm.hourly_rate };
             if (editRoom) {
@@ -306,10 +308,10 @@ function RoomsPage() {
             }
             setShowRoomModal(false);
             setEditRoom(null);
-            fetchRooms();
+            await fetchRooms();
         } catch (err) {
             alert(err.response?.data?.error || 'Xatolik');
-        }
+        } finally { setIsSubmitting(false); }
     };
 
 
@@ -317,6 +319,8 @@ function RoomsPage() {
     // ▶️ Start session
     const handleStartSession = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         const totalMinutes = (parseInt(sessionForm.hours) || 0) * 60 + (parseInt(sessionForm.minutes) || 0);
         try {
             await api.post('/sessions/start', {
@@ -325,43 +329,49 @@ function RoomsPage() {
                 duration_minutes: sessionForm.is_vip ? null : totalMinutes
             });
             setShowStartModal(false);
-            fetchRooms();
+            await fetchRooms();
         } catch (err) {
             alert(err.response?.data?.error || 'Xatolik');
-        }
+        } finally { setIsSubmitting(false); }
     };
 
     // ⏹️ Stop session  
     const handleStopSession = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             const res = await api.post(`/sessions/${selectedRoom.active_session?.id}/stop`, stopForm);
             setShowStopModal(false);
             setBillData(res.data.bill);
             setShowBillModal(true);
-            fetchRooms();
+            await fetchRooms();
         } catch (err) {
             alert(err.response?.data?.error || 'Xatolik');
-        }
+        } finally { setIsSubmitting(false); }
     };
 
     // 🛒 Add product to session — also refreshes product list to update stock counts
     const handleAddProduct = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             await api.post(`/sessions/${selectedRoom.active_session?.id}/products`, productForm);
             setShowProductModal(false);
             // 🔄 Refresh BOTH rooms (session product totals) AND products (stock counts)
-            fetchRooms();
-            fetchProducts();
+            await fetchRooms();
+            await fetchProducts();
         } catch (err) {
             alert(err.response?.data?.error || 'Xatolik');
-        }
+        } finally { setIsSubmitting(false); }
     };
 
     // 🗓️ Book Room
     const handleBookRoom = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             if (bookingForm.customer_phone.length !== 9 || !bookingForm.from_time) {
                 return;
@@ -395,35 +405,38 @@ function RoomsPage() {
                 notes: !bookingForm.until_time ? 'VIP' : undefined
             });
             setShowBookingModal(false);
-            fetchRooms();
+            await fetchRooms();
         } catch (err) {
             alert(err.response?.data?.error || 'Xatolik');
-        }
+        } finally { setIsSubmitting(false); }
     };
 
     const handleCancelReservation = async (reservationId) => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             await api.put(`/reservations/${reservationId}/cancel`);
-            fetchRooms();
+            await fetchRooms();
         } catch (err) {
             alert(err.response?.data?.error || "Xatolik yuz berdi");
-        }
+        } finally { setIsSubmitting(false); }
     };
 
     // ✏️ Open edit room
     // 🗑️ Delete room
     const handleDeleteRoom = async () => {
-        if (!showDeleteConfirm) return;
+        if (!showDeleteConfirm || isSubmitting) return;
+        setIsSubmitting(true);
         const room = showDeleteConfirm;
 
         try {
             await api.delete(`/rooms/${room.id}`);
             setShowDeleteConfirm(null);
-            fetchRooms(); // Refresh list
+            await fetchRooms(); // Refresh list
         } catch (err) {
             console.error('Room delete error:', err);
             alert(`Xonani o'chirishda xatolik yuz berdi: ${err.response?.data?.error || err.message}`);
-        }
+        } finally { setIsSubmitting(false); }
     };
 
     const openEditRoom = (room) => {
@@ -1107,10 +1120,10 @@ function RoomsPage() {
                             </div>
 
                             <div className="modal-actions">
-                                <button type="button" className="btn btn-ghost" onClick={() => setShowProductModal(false)}>Bekor qilish</button>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowProductModal(false)} disabled={isSubmitting}>Bekor qilish</button>
                                 <button type="submit" className="btn btn-primary"
-                                    disabled={!productForm.product_id}>
-                                    <ShoppingCart size={16} /> Qo'shish
+                                    disabled={!productForm.product_id || isSubmitting}>
+                                    <ShoppingCart size={16} /> {isSubmitting ? 'Qo\'shilmoqda...' : "Qo'shish"}
                                 </button>
                             </div>
                         </form>

@@ -109,15 +109,6 @@ app.get('/api', (req, res) => {
     });
 });
 
-// 🔄 Auto Ping (Render free tier uxlab qolmasligi uchun)
-setInterval(() => {
-    const url = process.env.WEBAPP_URL || `http://localhost:${process.env.PORT || 5000}`;
-    fetch(`${url}/api/health`)
-        .then(res => res.json())
-        .then(data => console.log('🔄 Render Keep-Alive ping successful'))
-        .catch(err => console.error('⚠️ Keep-Alive ping error:', err.message));
-}, 10 * 60 * 1000); // Har 10 daqiqada
-
 // ✅ GET /api/health — Detailed health check
 app.get('/api/health', async (req, res) => {
     try {

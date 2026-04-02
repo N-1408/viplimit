@@ -14,6 +14,7 @@
 
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTelegram } from '../context/TelegramContext';
 import {
     Gamepad2, ShoppingBag, BarChart3,
     Settings, Shield, LogOut, Wallet
@@ -21,6 +22,7 @@ import {
 
 function Sidebar() {
     const { user, logout, hasRole } = useAuth();
+    const { isSuperAdmin } = useTelegram();
     const navigate = useNavigate();
 
     // 🔗 Navigation links with Lucide icons
@@ -30,6 +32,7 @@ function Sidebar() {
         { path: '/expenses', label: 'Xarajatlar', icon: Wallet, roles: ['manager', 'owner'] },
         { path: '/reports', label: 'Hisobotlar', icon: BarChart3, roles: ['manager', 'owner'] },
         { path: '/settings', label: 'Sozlamalar', icon: Settings, roles: ['manager', 'owner'] },
+        ...(isSuperAdmin ? [{ path: '/super-admin', label: 'Super Admin', icon: Shield, roles: [] }] : [])
     ];
 
     // 🚪 Logout handler
@@ -53,7 +56,7 @@ function Sidebar() {
             {/* 🧭 Navigation */}
             <nav className="sidebar-nav">
                 {navLinks.filter(link =>
-                    link.roles.some(r => hasRole(r))
+                    link.roles.length === 0 || link.roles.some(r => hasRole(r))
                 ).map(link => (
                     <NavLink
                         key={link.path}

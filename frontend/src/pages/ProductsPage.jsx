@@ -43,6 +43,7 @@ function ProductsPage() {
     const [editProduct, setEditProduct] = useState(null);
     const [restockProduct, setRestockProductState] = useState(null);
     const [restockQty, setRestockQty] = useState(1);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [form, setForm] = useState({
         name: '', category: 'Ichimliklar', cost_price: '', sell_price: '',
@@ -53,8 +54,11 @@ function ProductsPage() {
         try {
             const res = await api.get('/products');
             setProducts(res.data);
-        } catch (err) { console.error('Products fetch error:', err); }
-        finally { setLoading(false); }
+            setLoading(false);
+        } catch (err) {
+            console.error('Products fetch error', err);
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -74,33 +78,39 @@ function ProductsPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             if (editProduct) { await api.put(`/products/${editProduct.id}`, form); }
             else { await api.post('/products', form); }
             setShowModal(false);
             setEditProduct(null);
-            fetchProducts();
+            await fetchProducts();
         } catch (err) { alert(err.response?.data?.error || 'Xatolik'); }
+        finally { setIsSubmitting(false); }
     };
 
     const handleRestock = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             await api.put(`/products/${restockProduct.id}/restock`, { quantity: restockQty });
             setShowRestockModal(false);
-            fetchProducts();
+            await fetchProducts();
         } catch (err) { alert(err.response?.data?.error || 'Xatolik'); }
+        finally { setIsSubmitting(false); }
     };
 
     const confirmDelete = async () => {
-        if (!showDeleteConfirm) return;
+        if (!showDeleteConfirm || isSubmitting) return;
+        setIsSubmitting(true);
         try {
             await api.delete(`/products/${showDeleteConfirm.id}`);
             setShowDeleteConfirm(null);
-            fetchProducts();
-        } catch (err) {
-            alert(err.response?.data?.error || 'Xatolik');
-        }
+            await fetchProducts();
+        } catch (err) { alert(err.response?.data?.error || 'Xatolik'); }
+        finally { setIsSubmitting(false); }
     };
 
     const openEdit = (product) => {
@@ -204,8 +214,10 @@ function ProductsPage() {
                                     <input type="number" className="form-input" min="1" value={form.low_stock_threshold} onChange={e => setForm({ ...form, low_stock_threshold: parseInt(e.target.value) })} /></div>
                             </div>
                             <div className="modal-actions">
-                                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Bekor qilish</button>
-                                <button type="submit" className="btn btn-primary">{editProduct ? <><Pencil size={16} /> Saqlash</> : <><Plus size={16} /> Qo'shish</>}</button>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)} disabled={isSubmitting}>Bekor qilish</button>
+                                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                                    {isSubmitting ? 'Saqlanmoqda...' : editProduct ? <><Pencil size={16} /> Saqlash</> : <><Plus size={16} /> Qo'shish</>}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -219,15 +231,17 @@ function ProductsPage() {
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3 className="modal-title"><PackagePlus size={18} /> Tovar kiritish — {restockProduct?.name}</h3>
-                            <button className="modal-close" onClick={() => setShowRestockModal(false)}><X size={16} /></button>
+                            <button className="modal-close" onClick={() => setShowRestockModal(false)} disabled={isSubmitting}><X size={16} /></button>
                         </div>
                         <form onSubmit={handleRestock}>
                             <p className="text-muted mb-16">Hozirgi qoldiq: <strong>{restockProduct?.quantity}</strong></p>
                             <div className="form-group"><label className="form-label">Qo'shilayotgan miqdor</label>
-                                <input type="number" className="form-input" min="1" required autoFocus value={restockQty} onChange={e => setRestockQty(parseInt(e.target.value) || 1)} /></div>
+                                <input type="number" className="form-input" min="1" required autoFocus onFocus={e => e.target.select()} value={restockQty} onChange={e => setRestockQty(e.target.value === '' ? '' : parseInt(e.target.value))} disabled={isSubmitting} /></div>
                             <div className="modal-actions">
-                                <button type="button" className="btn btn-ghost" onClick={() => setShowRestockModal(false)}>Bekor qilish</button>
-                                <button type="submit" className="btn btn-success"><PackagePlus size={16} /> Kiritish</button>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowRestockModal(false)} disabled={isSubmitting}>Bekor qilish</button>
+                                <button type="submit" className="btn btn-success" disabled={isSubmitting}>
+                                    <PackagePlus size={16} /> {isSubmitting ? 'Kiritilmoqda...' : 'Kiritish'}
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -12,7 +12,7 @@ import api from '../api/axios';
 import { KeyRound, CheckCircle2, Globe2, Palette, Send, CreditCard, Users, Smartphone, Shield, AlertCircle, Sparkles, Settings } from 'lucide-react';
 
 function SettingsPage() {
-    const { user, hasRole } = useAuth();
+    const { user, hasRole, logout } = useAuth();
     const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: '' }
     const [isSaving, setIsSaving] = useState(false);
 
@@ -89,6 +89,22 @@ function SettingsPage() {
 
                 {/* 🔒 Security & Login (Left Panel) */}
                 <div style={{ flex: '1 1 min(100%, 400px)', maxWidth: '450px' }}>
+
+                    {/* Logout Card (Useful for Mobile where sidebar is hidden) */}
+                    <div className="card mb-24" style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-12">
+                                <div style={{ background: 'var(--accent-danger-soft)', padding: '8px', borderRadius: 'var(--radius-md)' }}>
+                                    <LogOut color="var(--accent-danger)" size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold" style={{ fontSize: '1.05rem', color: 'var(--accent-danger)' }}>Tizimdan chiqish</h3>
+                                </div>
+                            </div>
+                            <button className="btn btn-danger btn-sm" onClick={logout}>Chiqish</button>
+                        </div>
+                    </div>
+
                     <div className="card">
                         <div className="flex items-center gap-12 mb-24">
                             <KeyRound size={24} className="text-muted" />

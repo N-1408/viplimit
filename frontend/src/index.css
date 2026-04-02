@@ -104,6 +104,8 @@
 html {
     font-size: 16px;
     scroll-behavior: smooth;
+    /* Prevent bounce on iOS */
+    overscroll-behavior-y: none;
 }
 
 body {
@@ -118,6 +120,11 @@ body {
     line-height: 1.6;
     overflow-x: hidden;
     position: relative;
+    /* Prevent bounce on iOS */
+    overscroll-behavior-y: none;
+    /* Safe Area for Telegram WebApp Mobile Notch */
+    padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
+    padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
 }
 
 /* Ambient Deep Lighting Background */
