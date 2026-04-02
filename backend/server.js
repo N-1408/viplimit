@@ -200,12 +200,20 @@ server.listen(PORT, () => {
     }
 });
 
-// 🔄 Graceful shutdown
-process.on('SIGTERM', () => {
+// 🔄 Graceful shutdown — bot ni to'xtatib, keyin serverni yopish
+const gracefulShutdown = () => {
     console.log('🔄 Graceful shutdown initiated...');
+    // 🛑 Bot polling ni darhol to'xtatish (409 oldini olish)
+    const { stopBot } = require('./bot');
+    stopBot();
     server.close(() => {
         pool.end();
         console.log('✅ Server stopped gracefully.');
         process.exit(0);
     });
-});
+    // ⏱️ 5 sekundda yopilmasa — majburan chiqish
+    setTimeout(() => process.exit(1), 5000);
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
