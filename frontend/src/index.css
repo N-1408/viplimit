@@ -87,7 +87,7 @@
     /* Butter-smooth animations */
     --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-normal: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --transition-spring: 0.35s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 /* ============================================
@@ -105,7 +105,9 @@ html {
     font-size: 16px;
     scroll-behavior: smooth;
     /* Prevent bounce on iOS */
-    overscroll-behavior-y: none;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -115,6 +117,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     line-height: 1.6;
@@ -144,7 +147,6 @@ body::before {
     filter: blur(120px);
     z-index: 0;
     pointer-events: none;
-    animation: drift 20s infinite alternate linear;
 }
 
 body::after {
@@ -159,7 +161,6 @@ body::after {
     filter: blur(100px);
     z-index: 0;
     pointer-events: none;
-    animation: drift2 25s infinite alternate linear;
 }
 
 @keyframes drift {
@@ -186,16 +187,13 @@ body::after {
     position: relative;
     z-index: 1;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 a {
     color: var(--accent-primary);
     text-decoration: none;
     transition: color var(--transition-fast);
-}
-
-a:hover {
-    color: var(--accent-primary-hover);
 }
 
 /* Base Utility Classes */
@@ -217,6 +215,7 @@ a:hover {
 .app-layout {
     display: flex;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .app-sidebar {
@@ -231,8 +230,9 @@ a:hover {
     position: sticky;
     top: 0;
     height: 100vh;
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
+    height: 100dvh;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     box-shadow: 1px 0 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -241,6 +241,7 @@ a:hover {
     /* No margin-left needed — flexbox handles it */
     padding: calc(28px + var(--tg-content-safe-area-inset-top, var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)))) 32px 28px 32px;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
 }
 
@@ -309,12 +310,6 @@ a:hover {
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     margin-bottom: 4px;
     border: 1px solid transparent;
-}
-
-.sidebar-link:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-primary);
-    transform: translateX(4px);
 }
 
 .sidebar-link.active {
@@ -400,12 +395,6 @@ a:hover {
     justify-content: center;
 }
 
-.sidebar-logout:hover {
-    background: var(--accent-danger-soft);
-    border-color: var(--accent-danger);
-    color: var(--accent-danger);
-}
-
 /* ============================================
  * 🚪 Frosted Glass Panels (V4 Ambient Cards)
  * ============================================ */
@@ -416,14 +405,8 @@ a:hover {
     padding: 20px;
     transition: all var(--transition-spring);
     box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-}
-
-.card:hover {
-    background: var(--bg-card-hover);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
 }
 
 .room-card {
@@ -438,8 +421,8 @@ a:hover {
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     /* Bug 8: Prevent text selection on long press */
     user-select: none;
     -webkit-touch-callout: none;
@@ -455,13 +438,6 @@ a:hover {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     opacity: 0.5;
-}
-
-.room-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-lg);
-    border-color: rgba(255, 255, 255, 0.15);
-    background: var(--bg-card-hover);
 }
 
 /* Selected Room Card (VIP/Active effect) */
@@ -583,15 +559,6 @@ a:hover {
     opacity: 0;
 }
 
-.room-card:hover .room-card-settings {
-    opacity: 1;
-}
-
-.room-card-settings:hover {
-    color: var(--text-primary);
-    background: var(--bg-elevated);
-}
-
 /* ============================================
  * 🏷️ Badges
  * ============================================ */
@@ -673,7 +640,9 @@ a:hover {
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast),
+        border-color var(--transition-fast), box-shadow var(--transition-fast),
+        transform var(--transition-fast);
     border: 1px solid transparent;
     outline: none;
     line-height: 1.2;
@@ -696,10 +665,6 @@ a:hover {
     transition: 0.5s;
 }
 
-.btn:hover::before {
-    left: 150%;
-}
-
 .btn:active {
     transform: scale(0.95);
 }
@@ -714,12 +679,6 @@ a:hover {
     font-weight: 700;
 }
 
-.btn-primary:hover {
-    box-shadow: 0 12px 32px rgba(255, 214, 10, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    transform: translateY(-2px);
-    color: var(--text-inverse);
-}
-
 /* 🌟 Tinted Buttons (Premium Glass) */
 .btn-success {
     background: rgba(16, 185, 129, 0.1);
@@ -727,13 +686,6 @@ a:hover {
     border: 1px solid rgba(16, 185, 129, 0.3);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
-}
-
-.btn-success:hover {
-    background: var(--accent-success);
-    color: #FFFFFF;
-    box-shadow: var(--accent-success-glow);
-    transform: translateY(-2px);
 }
 
 .btn-danger {
@@ -744,13 +696,6 @@ a:hover {
     backdrop-filter: blur(10px);
 }
 
-.btn-danger:hover {
-    background: var(--accent-danger);
-    color: #FFFFFF;
-    box-shadow: var(--accent-danger-glow);
-    transform: translateY(-2px);
-}
-
 .btn-warning {
     background: rgba(245, 158, 11, 0.1);
     color: var(--accent-warning);
@@ -758,23 +703,10 @@ a:hover {
     backdrop-filter: blur(10px);
 }
 
-.btn-warning:hover {
-    background: var(--accent-warning);
-    color: #FFFFFF;
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
-    transform: translateY(-2px);
-}
-
 .btn-ghost {
     background: transparent;
     color: var(--text-secondary);
     border: 1px solid var(--border-glass);
-}
-
-.btn-ghost:hover {
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .btn-sm {
@@ -832,11 +764,6 @@ a:hover {
     font-family: inherit;
 }
 
-.form-input:hover,
-.form-select:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
 .form-input:focus,
 .form-select:focus {
     border-color: var(--accent-primary);
@@ -864,10 +791,6 @@ a:hover {
     cursor: pointer;
     text-align: center;
     transition: all var(--transition-normal);
-}
-
-.mode-option:hover {
-    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .mode-option.selected {
@@ -957,11 +880,6 @@ tbody tr {
     transition: background-color var(--transition-fast);
 }
 
-tbody tr:hover {
-    background: rgba(255, 255, 255, 0.02);
-    /* Clean hover effect */
-}
-
 tr.low-stock {
     background: var(--accent-warning-soft);
 }
@@ -1026,8 +944,8 @@ tr.out-of-stock {
     box-shadow: var(--shadow-lg), var(--shadow-glass);
     animation: modal-slide-up var(--transition-spring);
     position: relative;
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     overflow: hidden;
     /* Ensure content respects border-radius */
 }
@@ -1068,12 +986,6 @@ tr.out-of-stock {
     font-size: 1.1rem;
 }
 
-.modal-close:hover {
-    background: var(--accent-danger-soft);
-    border-color: var(--accent-danger);
-    color: var(--accent-danger);
-}
-
 .modal-actions {
     display: flex;
     gap: 10px;
@@ -1093,11 +1005,6 @@ tr.out-of-stock {
     -webkit-backdrop-filter: blur(24px);
     transition: all var(--transition-normal);
     box-shadow: var(--shadow-sm), var(--shadow-glass);
-}
-
-.stat-card:hover {
-    border-color: rgba(255, 255, 255, 0.15);
-    background: var(--bg-card-hover);
 }
 
 .stat-card-icon {
@@ -1322,10 +1229,6 @@ body {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.card:hover {
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
-}
-
 .stat-card-value {
     font-size: 1.2rem;
     /* Significantly smaller top stats */
@@ -1376,10 +1279,6 @@ body {
 ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
 }
 
 .bill-receipt-header p {
@@ -1539,8 +1438,8 @@ body {
     padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
     z-index: 10001;
     animation: sheetSlideUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.05);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border-top: 1px solid var(--border-glass);
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
 }
@@ -1944,4 +1843,122 @@ input[type=number] {
     outline: 2px dashed rgba(255, 214, 10, 0.5) !important;
     outline-offset: 3px;
     transition: opacity 0.2s;
+}
+
+/* ============================================
+ * Hover states — faqat sichqoncha/qurilma bor joyda (touch users get :active)
+ * ============================================ */
+@media (hover: hover) and (pointer: fine) {
+a:hover {
+    color: var(--accent-primary-hover);
+}
+.sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    transform: translateX(4px);
+}
+.sidebar-logout:hover {
+    background: var(--accent-danger-soft);
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
+}
+.card:hover {
+    background: var(--bg-card-hover);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.room-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--bg-card-hover);
+}
+.room-card:hover .room-card-settings {
+    opacity: 1;
+}
+.room-card-settings:hover {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+}
+.btn:hover::before {
+    left: 150%;
+}
+.btn-primary:hover {
+    box-shadow: 0 12px 32px rgba(255, 214, 10, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    color: var(--text-inverse);
+}
+.btn-success:hover {
+    background: var(--accent-success);
+    color: #FFFFFF;
+    box-shadow: var(--accent-success-glow);
+    transform: translateY(-2px);
+}
+.btn-danger:hover {
+    background: var(--accent-danger);
+    color: #FFFFFF;
+    box-shadow: var(--accent-danger-glow);
+    transform: translateY(-2px);
+}
+.btn-warning:hover {
+    background: var(--accent-warning);
+    color: #FFFFFF;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
+    transform: translateY(-2px);
+}
+.btn-ghost:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.form-input:hover, .form-select:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+.mode-option:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+    /* Clean hover effect */
+}
+.modal-close:hover {
+    background: var(--accent-danger-soft);
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
+}
+.stat-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--bg-card-hover);
+}
+.card:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+}
+
+/* ============================================
+ * 📱 Native feel baseline (mobile-native rules)
+ * ============================================ */
+button, a, [role="button"], .sidebar-link, .bottom-nav-item {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+input, textarea, select {
+    font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.15s !important;
+        scroll-behavior: auto !important;
+    }
 }

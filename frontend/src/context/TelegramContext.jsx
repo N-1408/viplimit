@@ -32,10 +32,33 @@ export function TelegramProvider({ children }) {
             }
 
             // 🎨 Theme adaptation
-            telegram.setHeaderColor('#0a0a0f');
-            telegram.setBackgroundColor('#0a0a0f');
+            telegram.setHeaderColor('#030308');
+            telegram.setBackgroundColor('#030308');
+
+            // 🖥️ Full screen mode (Bot API 8.0+; eski versiyalarda expand() yetarli)
+            if (telegram.requestFullscreen) {
+                telegram.requestFullscreen().catch(() => {});
+            }
 
             setTg(telegram);
+
+            // 📐 Safe area insets (Bot API 9.0+) — CSS o'zgaruvchilarga yozamiz
+            const applySafeArea = () => {
+                const rootStyle = document.documentElement.style;
+                const sa = telegram.safeAreaInset || {};
+                const csa = telegram.contentSafeAreaInset || {};
+                rootStyle.setProperty('--tg-safe-area-inset-top', (sa.top || 0) + 'px');
+                rootStyle.setProperty('--tg-safe-area-inset-bottom', (sa.bottom || 0) + 'px');
+                rootStyle.setProperty('--tg-safe-area-inset-left', (sa.left || 0) + 'px');
+                rootStyle.setProperty('--tg-safe-area-inset-right', (sa.right || 0) + 'px');
+                rootStyle.setProperty('--tg-content-safe-area-inset-top', (csa.top || 0) + 'px');
+                rootStyle.setProperty('--tg-content-safe-area-inset-bottom', (csa.bottom || 0) + 'px');
+            };
+            applySafeArea();
+            if (telegram.onEvent) {
+                telegram.onEvent('viewportChanged', applySafeArea);
+                telegram.onEvent('safeAreaChanged', applySafeArea);
+            }
 
             // 👤 Get TG user info
             const user = telegram.initDataUnsafe?.user;
@@ -69,6 +92,13 @@ export function TelegramProvider({ children }) {
     // 🔍 Is running inside Telegram?
     const isTelegram = !!tg;
 
+    // 📳 Haptic feedback helper
+    const haptic = {
+        impact: (style = 'light') => tg?.HapticFeedback?.impactOccurred(style),
+        notify: (type = 'success') => tg?.HapticFeedback?.notificationOccurred(type),
+        select: () => tg?.HapticFeedback?.selectionChanged(),
+    };
+
     // 🔒 Is Super Admin?
     const isSuperAdmin = autoLoginResult?.is_super_admin || false;
 
@@ -78,6 +108,7 @@ export function TelegramProvider({ children }) {
             tgUser,
             isTelegram,
             isSuperAdmin,
+            haptic,
             autoLoginResult,
             loading
         }}>

@@ -10,7 +10,8 @@
 // 2026-04-03 01:28 (Tashkent) — 🤖 TelegramProvider, SuperAdminPage route qo'shildi
 // ============================================
 
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
 import Sidebar from './components/Sidebar';
@@ -29,7 +30,7 @@ function ProtectedRoute({ children, roles }) {
     // ⏳ Wait for auth check
     if (loading) {
         return (
-            <div className="flex-center" style={{ height: '100vh' }}>
+            <div className="flex-center" style={{ height: '100dvh' }}>
                 <p className="text-muted">⏳ Yuklanmoqda...</p>
             </div>
         );
@@ -46,6 +47,33 @@ function ProtectedRoute({ children, roles }) {
     }
 
     return children;
+}
+
+// 🔙 Telegram native Back Button — routerga ulangan
+function TelegramBackButton() {
+    const { tg } = useTelegram();
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+
+    // Register/unregister the click handler once
+    useEffect(() => {
+        if (!tg?.BackButton) return undefined;
+        const onClick = () => navigate(-1);
+        tg.BackButton.onClick(onClick);
+        return () => tg.BackButton.offClick(onClick);
+    }, [tg, navigate]);
+
+    // Show on inner pages, hide on root and login
+    useEffect(() => {
+        if (!tg?.BackButton) return;
+        if (pathname === '/' || pathname === '/login') {
+            tg.BackButton.hide();
+        } else {
+            tg.BackButton.show();
+        }
+    }, [tg, pathname]);
+
+    return null;
 }
 
 // 📐 Layout wrapper — adds sidebar to authenticated pages
@@ -66,7 +94,9 @@ function App() {
     // const { isSuperAdmin } = useTelegram();
 
     return (
-        <Routes>
+        <>
+            <TelegramBackButton />
+            <Routes>
             {/* 🔑 Login page (no sidebar) */}
             <Route path="/login" element={
                 user ? <Navigate to="/" replace /> : <LoginPage />
@@ -119,6 +149,7 @@ function App() {
             {/* 🚫 Catch-all — redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </>
     );
 }
 

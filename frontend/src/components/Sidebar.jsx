@@ -22,7 +22,7 @@ import {
 
 function Sidebar() {
     const { user, logout, hasRole } = useAuth();
-    const { isSuperAdmin } = useTelegram();
+    const { isSuperAdmin, haptic } = useTelegram();
     const navigate = useNavigate();
 
     // 🔗 Navigation links with Lucide icons
@@ -62,6 +62,7 @@ function Sidebar() {
                         to={link.path}
                         end={link.path === '/'}
                         className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                        onClick={() => haptic?.select()}
                     >
                         <link.icon className="link-icon" size={20} />
                         {link.label}
