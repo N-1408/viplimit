@@ -23,10 +23,13 @@ const { Server } = require('socket.io');
 const { pool } = require('./config/database');
 const { sanitizeBody } = require('./middleware/sanitize');
 const { startBot } = require('./bot');
+const { startKeepAlive } = require('./keepalive');
 const path = require('path');
 
 // 📦 Create Express app and HTTP server
 const app = express();
+// 🌐 Render proxy ortida kelgan so'rovlarda haqiqiy IP ishlashi uchun
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // 🔌 Initialize Socket.io for real-time room status updates
@@ -51,10 +54,10 @@ app.use(cors({
 app.use(helmet());
 
 // 📋 Morgan — HTTP so'rovlarni log qilish
-app.use(morgan('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'tiny' : 'dev'));
 
 // 📥 Parse JSON request bodies
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // 🛡️ Sanitize — barcha req.body string qiymatlarni tozalash (XSS oldini olish)
 app.use(sanitizeBody);
@@ -198,6 +201,9 @@ server.listen(PORT, () => {
     if (botToken) {
         startBot(botToken, webAppUrl);
     }
+
+    // ⏰ Free instance uyg'on turishi uchun keep-alive
+    startKeepAlive();
 });
 
 // 🔄 Graceful shutdown — bot ni to'xtatib, keyin serverni yopish

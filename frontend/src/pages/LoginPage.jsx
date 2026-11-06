@@ -52,13 +52,6 @@ function LoginPage() {
                 password: loginForm.password
             });
 
-            // 🤖 Agar TG ichida bo'lsa — telegram_users ni bog'lash
-            if (tgUser?.id) {
-                try {
-                    await api.post('/auth/tg-auto-login', { telegram_id: tgUser.id });
-                } catch (e) { /* ignore */ }
-            }
-
             login(res.data.user, res.data.token);
         } catch (err) {
             setError(err.response?.data?.error || 'Kirishda xatolik');
@@ -78,7 +71,7 @@ function LoginPage() {
                 username: registerForm.username,
                 password: registerForm.password,
                 full_name: registerForm.full_name,
-                telegram_id: tgUser?.id || null
+                init_data: window.Telegram?.WebApp?.initData || null
             });
             login(res.data.user, res.data.token);
         } catch (err) {

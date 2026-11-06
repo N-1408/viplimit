@@ -42,6 +42,22 @@ const createProduct = async (req, res) => {
             return res.status(400).json({ error: 'Mahsulot nomi va sotish narxi kiritilishi shart.' });
         }
 
+        // 📦 Plan limitini tekshirish (max_products)
+        const limitResult = await query(
+            `SELECT p.max_products,
+                    (SELECT COUNT(*) FROM products WHERE branch_id = $1 AND is_active = true) as products_count
+             FROM branches b LEFT JOIN plans p ON b.plan_id = p.id WHERE b.id = $1`,
+            [req.user.branch_id]
+        );
+        if (limitResult.rows.length > 0) {
+            const { max_products, products_count } = limitResult.rows[0];
+            if (max_products !== null && parseInt(products_count) >= parseInt(max_products)) {
+                return res.status(403).json({
+                    error: `🚫 Planingiz ${max_products} ta mahsulotgacha ruxsat beradi. Plan yangilang.`
+                });
+            }
+        }
+
         const result = await query(
             `INSERT INTO products (branch_id, name, category, cost_price, sell_price, quantity, low_stock_threshold)
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,

@@ -112,7 +112,8 @@ async function startBot(token, webAppUrl) {
     // ============================================
     bot.onText(/^\/shep$/, async (msg) => {
         const chatId = msg.chat.id;
-        if (String(chatId) === '1472746219') {
+        const superAdminId = process.env.SUPER_ADMIN_TG_ID;
+        if (superAdminId && String(chatId) === String(superAdminId)) {
             shepState[chatId] = true;
             await bot.sendMessage(chatId, "Parolni kiriting:");
         }
@@ -123,7 +124,8 @@ async function startBot(token, webAppUrl) {
 
         const chatId = msg.chat.id;
         if (shepState[chatId]) {
-            if (msg.text === 'Devzira') {
+            const expectedPassword = process.env.SUPER_ADMIN_PASSWORD;
+            if (expectedPassword && msg.text === expectedPassword) {
                 delete shepState[chatId];
 
                 const baseUrl = webAppUrl || 'https://viplimit.onrender.com';

@@ -41,8 +41,8 @@ export function TelegramProvider({ children }) {
             const user = telegram.initDataUnsafe?.user;
             if (user) {
                 setTgUser(user);
-                // 🤖 Try auto-login
-                tryAutoLogin(user.id);
+                // 🤖 Try auto-login (Telegram initData bilan — xavfsiz)
+                tryAutoLogin();
             } else {
                 setLoading(false);
             }
@@ -52,10 +52,11 @@ export function TelegramProvider({ children }) {
         }
     }, []);
 
-    // 🤖 Auto-login by Telegram ID
-    const tryAutoLogin = useCallback(async (telegramId) => {
+    // 🤖 Auto-login via Telegram initData (server imzosini tekshiradi)
+    const tryAutoLogin = useCallback(async () => {
         try {
-            const res = await api.post('/auth/tg-auto-login', { telegram_id: telegramId });
+            const initData = window.Telegram?.WebApp?.initData || '';
+            const res = await api.post('/auth/tg-auto-login', { init_data: initData });
             setAutoLoginResult(res.data);
         } catch (err) {
             console.error('TG auto-login error:', err);

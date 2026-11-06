@@ -18,6 +18,15 @@ const createReservation = async (req, res) => {
             return res.status(400).json({ error: 'Xona, Telefon raqami, Boshlanish va Tugash vaqti kiritilishi shart.' });
         }
 
+        // 🔒 Xona shu clubga tegishlimi tekshirish
+        const roomCheck = await query(
+            'SELECT id FROM rooms WHERE id = $1 AND branch_id = $2',
+            [room_id, req.user.branch_id]
+        );
+        if (roomCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Xona topilmadi.' });
+        }
+
         // Optional: Check if the room is already booked in that timeframe
         const overlapCheck = await query(
             `SELECT id FROM reservations 

@@ -21,31 +21,43 @@ const { calculateDurationMinutes, calculateTimeCost } = require('../utils/helper
 
 // ▶️ POST /api/sessions/start — Start a new session (open a room)
 // 💎 VIP = cheksiz vaqt (is_vip=true, is_unlimited=true), narx bir xil
+// 🔒 FIX: transaction + FOR UPDATE — ikki xodim bir vaqtda xonani ochishi mumkin emas
 const startSession = async (req, res) => {
+    const client = await pool.connect();
     try {
         const { room_id, is_vip, duration_minutes, session_type, notes } = req.body;
 
         if (!room_id) {
+            client.release();
             return res.status(400).json({ error: 'Xona tanlanishi shart.' });
         }
 
-        // 🔍 Check if room exists and is free
-        const roomResult = await query(
-            'SELECT * FROM rooms WHERE id = $1 AND branch_id = $2 AND is_active = true',
+        // 🔒 Begin transaction
+        await client.query('BEGIN');
+
+        // 🔒 FOR UPDATE bilan xonani bloklash — parallel so'rov kutadi
+        const roomResult = await client.query(
+            `SELECT * FROM rooms WHERE id = $1 AND branch_id = $2 AND is_active = true FOR UPDATE`,
             [room_id, req.user.branch_id]
         );
 
         if (roomResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            client.release();
             return res.status(404).json({ error: 'Xona topilmadi.' });
         }
 
         const room = roomResult.rows[0];
 
         if (room.status === 'busy') {
+            await client.query('ROLLBACK');
+            client.release();
             return res.status(400).json({ error: 'Bu xona hozir band.' });
         }
 
         if (room.status === 'maintenance') {
+            await client.query('ROLLBACK');
+            client.release();
             return res.status(400).json({ error: 'Bu xona texnik xizmatda.' });
         }
 
@@ -60,7 +72,7 @@ const startSession = async (req, res) => {
         }
 
         // 📥 Create session
-        const sessionResult = await query(
+        const sessionResult = await client.query(
             `INSERT INTO sessions 
              (room_id, started_by, is_vip, is_unlimited, scheduled_end, session_type, notes)
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
@@ -71,9 +83,12 @@ const startSession = async (req, res) => {
         );
 
         // 🔄 Update room status to 'busy'
-        await query('UPDATE rooms SET status = $1 WHERE id = $2', ['busy', room_id]);
+        await client.query('UPDATE rooms SET status = $1 WHERE id = $2', ['busy', room_id]);
 
-        // 📝 Log action
+        // ✅ Commit
+        await client.query('COMMIT');
+
+        // 📝 Log action (transaction tashqarisida — kritik emas)
         await logAction({
             branchId: req.user.branch_id,
             userId: req.user.id,
@@ -84,14 +99,22 @@ const startSession = async (req, res) => {
             ipAddress: getClientIP(req)
         });
 
+        // 📡 Boshqa clientlarga xona holati o'zgarganini xabar berish
+        if (req.io) {
+            req.io.to(`branch_${req.user.branch_id}`).emit('rooms_updated');
+        }
+
         res.status(201).json({
             message: 'Sessiya boshlandi!',
             session: sessionResult.rows[0],
             room: room.name
         });
     } catch (err) {
+        try { await client.query('ROLLBACK'); } catch (e) { /* noop */ }
         console.error('❌ StartSession error:', err.message);
         res.status(500).json({ error: 'Server xatosi.' });
+    } finally {
+        client.release();
     }
 };
 
@@ -110,8 +133,8 @@ const stopSession = async (req, res) => {
             `SELECT s.*, r.hourly_rate, r.name as room_name, r.console_type
              FROM sessions s
              JOIN rooms r ON s.room_id = r.id
-             WHERE s.id = $1 AND s.status = 'active'`,
-            [req.params.id]
+             WHERE s.id = $1 AND s.status = 'active' AND r.branch_id = $2`,
+            [req.params.id, req.user.branch_id]
         );
 
         if (sessionResult.rows.length === 0) {
@@ -226,8 +249,9 @@ const toggleVip = async (req, res) => {
     try {
         const result = await query(
             `UPDATE sessions SET is_vip = NOT is_vip, is_unlimited = NOT is_unlimited
-             WHERE id = $1 AND status = 'active' RETURNING *`,
-            [req.params.id]
+             WHERE id = $1 AND status = 'active'
+               AND room_id IN (SELECT id FROM rooms WHERE branch_id = $2) RETURNING *`,
+            [req.params.id, req.user.branch_id]
         );
 
         if (result.rows.length === 0) {
@@ -272,8 +296,10 @@ const addProductToSession = async (req, res) => {
 
         // 🔍 Check session is active
         const sessionCheck = await client.query(
-            'SELECT id FROM sessions WHERE id = $1 AND status = $2',
-            [req.params.id, 'active']
+            `SELECT s.id FROM sessions s
+             JOIN rooms r ON s.room_id = r.id
+             WHERE s.id = $1 AND s.status = $2 AND r.branch_id = $3`,
+            [req.params.id, 'active', req.user.branch_id]
         );
         if (sessionCheck.rows.length === 0) {
             await client.query('ROLLBACK');
@@ -392,8 +418,8 @@ const getSessionDetails = async (req, res) => {
              JOIN rooms r ON s.room_id = r.id
              JOIN users u1 ON s.started_by = u1.id
              LEFT JOIN users u2 ON s.closed_by = u2.id
-             WHERE s.id = $1`,
-            [req.params.id]
+             WHERE s.id = $1 AND r.branch_id = $2`,
+            [req.params.id, req.user.branch_id]
         );
 
         if (sessionResult.rows.length === 0) {
