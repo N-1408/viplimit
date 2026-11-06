@@ -1,26 +1,84 @@
 // ============================================
 // 📁 File: backend/bot.js — Telegram Bot for VipLimit Mini App
-// 👤 Author: User with AI
-// 📝 Description: Telegram bot that collects user phone numbers
-//    and provides a WebApp button to open the VipLimit Mini App.
-//    Uses long-polling in development, webhook in production.
-// 📅 Created: 2026-04-03 01:28 (Tashkent Time)
-// ============================================
-// 📋 CHANGE LOG:
-// 2026-04-03 03:15 (Tashkent) — 🐛 409 Conflict fix: graceful shutdown,
-//    startup delay, va error retry logic qo'shildi
+// 📝 Description: Chat mantiqi (2026-11 qayta qurilgan):
+//    1) /start — ro'yxatdan o'tgan foydalanuvchiga telefon SO'RALMAYDI,
+//       darhol Mini App tugmasi beriladi. Yangi foydalanuvchidan bir marta
+//       telefon so'raladi.
+//    2) Barcha tugmalar inline web_app uslubida (doimiy reply keyboard olib
+//       tashlanadi), Chat Menu Button o'zi Mini App ochadi.
+//    3) /shep — Super Admin maxsus komandasi (parol env'dan).
 // ============================================
 
 const TelegramBot = require('node-telegram-bot-api');
+const https = require('https');
 const { query } = require('./config/database');
 
+const DEFAULT_APP_URL = 'https://viplimit.onrender.com';
+
 let bot = null;
+let botToken = null;
+let appUrl = DEFAULT_APP_URL;
 const shepState = {};
 
 /**
+ * 🌐 Telegram Bot API'ga xom so'rov (node-telegram-bot-api qo'llab-quvvatlamagan
+ *    metodlar uchun: setChatMenuButton va h.k.)
+ */
+function callApi(method, payload) {
+    return new Promise((resolve, reject) => {
+        const data = JSON.stringify(payload || {});
+        const req = https.request({
+            hostname: 'api.telegram.org',
+            path: `/bot${botToken}/${method}`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(data)
+            },
+            timeout: 15000
+        }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(body);
+                    if (parsed.ok) {
+                        resolve(parsed.result);
+                    } else {
+                        reject(new Error(`${method}: ${parsed.description || 'unknown error'}`));
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        });
+        req.on('error', reject);
+        req.on('timeout', () => req.destroy(new Error('timeout')));
+        req.write(data);
+        req.end();
+    });
+}
+
+/**
+ * 🔍 telegram_users jadvalidan foydalanuvchini topish
+ */
+async function findTgUser(telegramId) {
+    const res = await query(
+        'SELECT id, phone FROM telegram_users WHERE telegram_id = $1 LIMIT 1',
+        [String(telegramId)]
+    );
+    return res.rows[0] || null;
+}
+
+/**
+ * 🎮 Inline Mini App tugmasi
+ */
+function inlineWebApp(text) {
+    return { inline_keyboard: [[{ text: text || '🎮 VipLimitni ochish', web_app: { url: appUrl } }]] };
+}
+
+/**
  * 🤖 Initialize and start the Telegram bot
- * @param {string} token - Bot API token from BotFather
- * @param {string} webAppUrl - URL of the deployed Mini App
  */
 async function startBot(token, webAppUrl) {
     if (!token) {
@@ -28,49 +86,82 @@ async function startBot(token, webAppUrl) {
         return null;
     }
 
+    botToken = token;
+    appUrl = webAppUrl || DEFAULT_APP_URL;
+
     // ⏳ Deploy transitioni kutish (409 Conflict oldini olish)
     console.log('🤖 Bot 3 sekunddan keyin ishga tushadi...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // 🤖 Create bot instance (polling mode with error recovery)
     bot = new TelegramBot(token, {
         polling: {
-            interval: 2000,           // 📡 2 sekund oralatib so'rash
+            interval: 2000,
             autoStart: true,
-            params: { timeout: 10 }   // ⏱️ Long polling timeout
+            params: { timeout: 10 }
         }
     });
 
     console.log('🤖 Telegram bot ishga tushdi!');
 
     // ============================================
-    // 📋 /start — Telefon raqam so'rash
+    // 🧹 Menyuni yangilash: buyruqlar ro'yxatini bo'shatish,
+    //    Chat Menu Button'ni to'g'ridan-to'g'ri Mini App qilish
     // ============================================
-    bot.onText(/\/start/, async (msg) => {
-        const chatId = msg.chat.id;
-        const firstName = msg.from.first_name || 'User';
+    callApi('setMyCommands', { commands: [] }).catch(() => {});
+    callApi('setChatMenuButton', {
+        menu_button: {
+            type: 'web_app',
+            text: '🎮 VipLimit',
+            web_app: { url: appUrl }
+        }
+    }).catch((err) => console.log('⚠️ setChatMenuButton:', err.message));
 
-        // 📱 Telefon raqam so'rash (contact button)
-        await bot.sendMessage(chatId,
-            `Assalomu alaykum, ${firstName}! 👋\n\n` +
-            `🎮 *VipLimit PRO* — Game Club boshqaruv tizimiga xush kelibsiz!\n\n` +
-            `📱 Davom etish uchun telefon raqamingizni yuboring:`,
-            {
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    keyboard: [[{
-                        text: '📱 Telefon raqamni yuborish',
-                        request_contact: true
-                    }]],
-                    resize_keyboard: true,
-                    one_time_keyboard: true
-                }
+    // ============================================
+    // 🚀 /start — holatga qarab ikki yo'l
+    // ============================================
+    bot.onText(/^\/start/, async (msg) => {
+        const chatId = msg.chat.id;
+        const firstName = msg.from.first_name || 'dost';
+
+        try {
+            const existing = await findTgUser(msg.from.id);
+
+            if (existing) {
+                // ✅ Allaqachon ro'yxatdan o'tgan — telefon SO'RALMAYDI
+                await bot.sendMessage(
+                    chatId,
+                    `Xush kelibsiz, ${firstName}! 👋\n\n` +
+                    `🎮 VipLimit — Game Club boshqaruv tizimi.\n\n` +
+                    `Pastdagi tugma orqali panelni ochingiz:`,
+                    { reply_markup: inlineWebApp('🎮 Admin panelni ochish') }
+                );
+            } else {
+                // 📱 Yangi foydalanuvchi — bir marta telefon so'raladi
+                await bot.sendMessage(
+                    chatId,
+                    `Assalomu alaykum, ${firstName}! 👋\n\n` +
+                    `🎮 VipLimit — Game Club boshqaruv tizimiga xush kelibsiz.\n\n` +
+                    `📱 Davom etish uchun pastdagi tugma bilan raqamingizni yuboring:`,
+                    {
+                        reply_markup: {
+                            keyboard: [[{
+                                text: '📱 Telefon raqamni yuborish',
+                                request_contact: true
+                            }]],
+                            resize_keyboard: true,
+                            one_time_keyboard: true
+                        }
+                    }
+                );
             }
-        );
+        } catch (err) {
+            console.error('❌ Bot /start error:', err.message);
+            await bot.sendMessage(chatId, '⚠️ Xatolik yuz berdi. Qaytadan /start bosing.');
+        }
     });
 
     // ============================================
-    // 📞 Contact — Raqam kelganda saqlash + Mini App button
+    // 📞 Contact — raqam kelganda bir marta saqlash
     // ============================================
     bot.on('contact', async (msg) => {
         const chatId = msg.chat.id;
@@ -78,7 +169,6 @@ async function startBot(token, webAppUrl) {
         const phone = msg.contact.phone_number;
 
         try {
-            // 💾 Telegram user ni saqlash yoki yangilash
             await query(
                 `INSERT INTO telegram_users (telegram_id, phone)
                  VALUES ($1, $2)
@@ -86,21 +176,17 @@ async function startBot(token, webAppUrl) {
                 [String(telegramId), phone]
             );
 
-            // ✅ Raqamingiz qabul qilindi va WebApp tugmasini doimiy klaviaturaga qo'shish
-            await bot.sendMessage(chatId,
-                `✅ Raqamingiz qabul qilindi!\n\n🎮 Endi VipLimit Admin panelini ochishingiz mumkin. Pastdagi tugmani bosing:`,
-                {
-                    reply_markup: {
-                        keyboard: [[{
-                            text: '🎮 Admin panel (VipLimit PRO)',
-                            web_app: { url: webAppUrl || 'https://viplimit.onrender.com' }
-                        }]],
-                        resize_keyboard: true,
-                        is_persistent: true
-                    }
-                }
-            );
+            // 🧹 Eski doimiy klaviaturani tozalash
+            await bot.sendMessage(chatId, '✅ Raqamingiz saqlandi!', {
+                reply_markup: { remove_keyboard: true, selective: false }
+            });
 
+            // 🎮 Mini App tugmasi (inline uslubda)
+            await bot.sendMessage(
+                chatId,
+                '🎮 Tayyor! VipLimit panelini ochingiz:',
+                { reply_markup: inlineWebApp('🎮 Admin panelni ochish') }
+            );
         } catch (err) {
             console.error('❌ Bot contact error:', err.message);
             await bot.sendMessage(chatId, '❌ Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
@@ -115,35 +201,70 @@ async function startBot(token, webAppUrl) {
         const superAdminId = process.env.SUPER_ADMIN_TG_ID;
         if (superAdminId && String(chatId) === String(superAdminId)) {
             shepState[chatId] = true;
-            await bot.sendMessage(chatId, "Parolni kiriting:");
+            await bot.sendMessage(chatId, 'Parolni kiriting:');
         }
     });
 
+    // ============================================
+    // 💬 Oddiy matn xabarlar — holatga qarab yo'naltirish
+    // ============================================
     bot.on('message', async (msg) => {
         if (!msg.text || msg.text.startsWith('/')) return;
 
         const chatId = msg.chat.id;
+
+        // 🔐 /shep parol bosqichi
         if (shepState[chatId]) {
             const expectedPassword = process.env.SUPER_ADMIN_PASSWORD;
+            delete shepState[chatId];
             if (expectedPassword && msg.text === expectedPassword) {
-                delete shepState[chatId];
-
-                const baseUrl = webAppUrl || 'https://viplimit.onrender.com';
-                const superAdminUrl = baseUrl.endsWith('/') ? baseUrl + 'super-admin' : baseUrl + '/super-admin';
-
-                await bot.sendMessage(chatId, "✅ Super admin huquqi tasdiqlandi. Pastdagi maxsus tugmadan kiring:", {
-                    reply_markup: {
-                        keyboard: [[{
-                            text: '🛡️ Super Admin panel',
-                            web_app: { url: superAdminUrl }
-                        }]],
-                        resize_keyboard: true,
-                        is_persistent: true
-                    }
+                const base = appUrl.endsWith('/') ? appUrl.slice(0, -1) : appUrl;
+                await bot.sendMessage(chatId, '🧹 Eski klaviatura tozalandi.', {
+                    reply_markup: { remove_keyboard: true, selective: false }
                 });
-            } else {
-                delete shepState[chatId];
+                await bot.sendMessage(
+                    chatId,
+                    '🛡️ Super admin huquqi tasdiqlandi. Panelni ochingiz:',
+                    {
+                        reply_markup: {
+                            inline_keyboard: [[{
+                                text: '🛡️ Super Admin panel',
+                                web_app: { url: `${base}/super-admin` }
+                            }]]
+                        }
+                    }
+                );
             }
+            return;
+        }
+
+        // 💬 Boshqa matnlar — foydali qisqa yo'naltirish
+        try {
+            const existing = await findTgUser(msg.from.id);
+            if (existing) {
+                await bot.sendMessage(
+                    chatId,
+                    '🎮 Barcha amallar Mini App ichida bajariladi:',
+                    { reply_markup: inlineWebApp('🎮 VipLimitni ochish') }
+                );
+            } else {
+                await bot.sendMessage(
+                    chatId,
+                    '📱 Avval raqamingizni yuboring:',
+                    {
+                        reply_markup: {
+                            keyboard: [[{
+                                text: '📱 Telefon raqamni yuborish',
+                                request_contact: true
+                            }]],
+                            resize_keyboard: true,
+                            one_time_keyboard: true
+                        }
+                    }
+                );
+            }
+        } catch (err) {
+            console.error('❌ Bot message error:', err.message);
         }
     });
 
@@ -151,9 +272,7 @@ async function startBot(token, webAppUrl) {
     // ❌ Error handling — 409 recovery
     // ============================================
     bot.on('polling_error', (err) => {
-        // 🔇 409 Conflict — deploy paytida normal holat, logni kamaytirish
         if (err.code === 'ETELEGRAM' && err.message.includes('409')) {
-            // Har 30 sekundda faqat bir marta log chiqarish
             if (!bot._lastConflictLog || Date.now() - bot._lastConflictLog > 30000) {
                 console.log('⚠️ Bot 409: boshqa instance hali to\'xtamagan, kutilmoqda...');
                 bot._lastConflictLog = Date.now();
