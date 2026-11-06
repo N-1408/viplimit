@@ -63,7 +63,7 @@
     --text-primary: #FFFFFF;
     --text-secondary: #9CA3AF;
     /* Bright distinct gray */
-    --text-muted: #6B7280;
+    --text-muted: #7C8595;
     --text-inverse: #000000;
 
     /* Micro-borders for 3D realism */
@@ -231,8 +231,8 @@ a {
     top: 0;
     height: 100vh;
     height: 100dvh;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow: 1px 0 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -405,8 +405,8 @@ a {
     padding: 20px;
     transition: all var(--transition-spring);
     box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .room-card {
@@ -421,8 +421,8 @@ a {
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     /* Bug 8: Prevent text selection on long press */
     user-select: none;
     -webkit-touch-callout: none;
@@ -840,8 +840,8 @@ a {
     border-radius: var(--radius-lg);
     /* Rounded table wrapper */
     box-shadow: var(--shadow-sm), var(--shadow-glass);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 table {
@@ -944,8 +944,8 @@ tr.out-of-stock {
     box-shadow: var(--shadow-lg), var(--shadow-glass);
     animation: modal-slide-up var(--transition-spring);
     position: relative;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     overflow: hidden;
     /* Ensure content respects border-radius */
 }
@@ -1001,8 +1001,8 @@ tr.out-of-stock {
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-lg);
     padding: 18px 20px;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     transition: all var(--transition-normal);
     box-shadow: var(--shadow-sm), var(--shadow-glass);
 }
@@ -1106,8 +1106,8 @@ tr.out-of-stock {
 .login-card {
     background: var(--bg-card);
     /* Changed to bg-card for consistency */
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-glass);
     /* Changed to border-glass */
     border-radius: var(--radius-xl);
@@ -1438,8 +1438,8 @@ body {
     padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
     z-index: 10001;
     animation: sheetSlideUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.05);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid var(--border-glass);
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
 }
@@ -1490,8 +1490,8 @@ body {
         z-index: 9999;
         border-top: 1px solid var(--border-glass);
         background: rgba(12, 12, 18, 0.85);
-        backdrop-filter: blur(40px);
-        -webkit-backdrop-filter: blur(40px);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         transform: none;
     }
 

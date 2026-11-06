@@ -51,7 +51,17 @@ app.use(cors({
 }));
 
 // 🛡️ Helmet — HTTP xavfsizlik headers (XSS, Clickjacking himoyasi)
-app.use(helmet());
+// ⚠️ CSP: Telegram WebApp SDK (telegram.org) va socket.io (wss) ruxsat etilishi SHART,
+//    aks holda Mini App ichida window.Telegram umuman yuklanmaydi.
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "script-src": ["'self'", "https://telegram.org"],
+            "connect-src": ["'self'", "https:", "wss:"]
+        }
+    }
+}));
 
 // 📋 Morgan — HTTP so'rovlarni log qilish
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'tiny' : 'dev'));
