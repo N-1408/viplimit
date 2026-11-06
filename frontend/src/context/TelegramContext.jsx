@@ -24,21 +24,28 @@ export function TelegramProvider({ children }) {
         const telegram = window.Telegram?.WebApp;
 
         if (telegram) {
-            telegram.ready();
-            telegram.expand(); // 📱 Full screen mode
-
-            if (telegram.disableVerticalSwipes) {
-                telegram.disableVerticalSwipes(); // 🚫 Prevents the whole app from bouncing/scrolling when swiping Modals
-            }
+            // 🛡️ Har bir Telegram API chaqiruvi himoyalangan — eski webview'larda
+            //    ba'zi metodlar mavjud emas yoki xato tashlaydi; xato butun ilovani
+            //    qora ekranga aylantirmasligi kerak.
+            try { telegram.ready(); } catch (e) {}
+            try { telegram.expand(); } catch (e) {}
+            try {
+                if (telegram.disableVerticalSwipes) {
+                    telegram.disableVerticalSwipes();
+                }
+            } catch (e) {}
 
             // 🎨 Theme adaptation
-            telegram.setHeaderColor('#030308');
-            telegram.setBackgroundColor('#030308');
+            try { telegram.setHeaderColor('#030308'); } catch (e) {}
+            try { telegram.setBackgroundColor('#030308'); } catch (e) {}
 
             // 🖥️ Full screen mode (Bot API 8.0+; eski versiyalarda expand() yetarli)
-            if (telegram.requestFullscreen) {
-                telegram.requestFullscreen().catch(() => {});
-            }
+            try {
+                if (telegram.requestFullscreen) {
+                    const fs = telegram.requestFullscreen();
+                    if (fs && typeof fs.catch === 'function') fs.catch(() => {});
+                }
+            } catch (e) {}
 
             setTg(telegram);
 
@@ -54,11 +61,13 @@ export function TelegramProvider({ children }) {
                 rootStyle.setProperty('--tg-content-safe-area-inset-top', (csa.top || 0) + 'px');
                 rootStyle.setProperty('--tg-content-safe-area-inset-bottom', (csa.bottom || 0) + 'px');
             };
-            applySafeArea();
-            if (telegram.onEvent) {
-                telegram.onEvent('viewportChanged', applySafeArea);
-                telegram.onEvent('safeAreaChanged', applySafeArea);
-            }
+            try {
+                applySafeArea();
+                if (telegram.onEvent) {
+                    telegram.onEvent('viewportChanged', applySafeArea);
+                    telegram.onEvent('safeAreaChanged', applySafeArea);
+                }
+            } catch (e) {}
 
             // 👤 Get TG user info
             const user = telegram.initDataUnsafe?.user;
